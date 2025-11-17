@@ -1,0 +1,95 @@
+/* ======== STYLE GLOBAL DES TABLEAUX DU PROJET - allproduit ======== */
+
+/* ✅ Apparence de base */
+.table {
+    border-collapse: separate;
+    border-spacing: 0 6px;
+    background: #fff;
+    width: auto;
+    /* <-- largeur automatique selon le contenu */
+    table-layout: auto;
+    /* <-- adapte la largeur des colonnes au contenu */
+    max-width: 100%;
+    /* ne dépasse jamais le conteneur */
+}
+
+/* ✅ En-tête */
+.table thead {
+    background: #1c911e;
+    color: white;
+    font-weight: 600;
+    user-select: none;
+    white-space: nowrap;
+    /* empêche le retour à la ligne */
+}
+
+/* ✅ Lignes */
+.table tbody tr {
+    background: #fff;
+    transition: all 0.2s ease-in-out;
+}
+
+/* ✅ Effet au survol */
+.table tbody tr:hover {
+    background: #f5fff4;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ✅ Images rondes */
+.table img {
+    border-radius: 50%;
+    object-fit: cover;
+    width: 60px;
+    height: 60px;
+}
+
+/* ✅ Cellules : s’adaptent à leur contenu */
+.table th,
+.table td {
+    white-space: nowrap;
+    /* le contenu reste sur une seule ligne */
+    padding: 10px 12px;
+}
+
+/* ✅ Tri des colonnes */
+.sortable::after {
+    content: ' ⇅';
+    font-size: 0.8rem;
+    color: #d9f0da;
+}
+
+.sorted-asc::after {
+    content: ' ▲';
+    color: #fff;
+}
+
+.sorted-desc::after {
+    content: ' ▼';
+    color: #fff;
+}
+
+/* ✅ Responsive mobile */
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        width: auto;
+        min-width: unset;
+    }
+
+    .table td img {
+        width: 45px;
+        height: 45px;
+    }
+
+    /* Réduit légèrement la taille du texte pour petits écrans */
+    .table th,
+    .table td {
+        font-size: 0.9rem;
+        padding: 8px 10px;
+    }
+}

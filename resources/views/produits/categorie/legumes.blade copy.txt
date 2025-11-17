@@ -1,0 +1,67 @@
+@extends('base')
+
+@section('title', 'Légumes')
+
+@section('content')
+    <div class="container mt-4">
+        <div class="row align-items-center mb-4 p-3 rounded shadow-sm"
+            style="background:white; border-left:5px solid #1c911e;">
+            <div class="col-md-4 d-flex align-items-center gap-2">
+                <i class="fa fa-carrot fa-2x" style="color:#070a23;"></i>
+                <h2 class="mb-0 fw-bold" style="color:#070a23;">Nos Légumes</h2>
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="searchLegumes" class="form-control" placeholder="Rechercher un légume...">
+            </div>
+        </div>
+    </div>
+
+    <div class="products-box">
+        <div class="container">
+            <div class="row" id="legumesList">
+                @forelse ($produits->where('categorie', 'Légumes') as $produit)
+                    <div class="col-lg-3 col-md-6  mb-4 single-legume">
+                        <div class="products-single shadow-sm rounded" style="background:#fff; border:1px solid #eaeaea;">
+                            <div class="box-img-hover position-relative">
+                                @if ($produit->stock > 0)
+                                    <span class="badge bg-success position-absolute top-0 start-0 m-2">Disponible</span>
+                                @else
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-2">Pas disponible</span>
+                                @endif
+                                @if ($produit->image)
+                                    <img src="{{ asset('storage/' . $produit->image) }}" class="img-fluid"
+                                        style="height:220px; object-fit:cover;" alt="{{ $produit->nom }}">
+                                @else
+                                    <img src="https://via.placeholder.com/220" class="img-fluid"
+                                        style="height:220px; object-fit:cover;" alt="Pas d'image">
+                                @endif
+                            </div>
+                            <div class="why-text p-2 text-center">
+                                <h4 style="height:40px; overflow:hidden;">{{ $produit->nom }}</h4>
+                                <h5 style="color:#1c911e; font-weight:bold; margin:0;">
+                                    {{ number_format($produit->prix, 0, ',', ' ') }} GNF
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-center text-muted">Aucun légume disponible pour le moment.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchLegumes');
+        const legumes = document.querySelectorAll('.single-legume');
+
+        searchInput.addEventListener('input', function () {
+            const searchValue = this.value.toLowerCase();
+
+            legumes.forEach(legume => {
+                const name = legume.querySelector('h4').textContent.toLowerCase();
+                legume.style.display = name.includes(searchValue) ? 'block' : 'none';
+            });
+        });
+    </script>
+@endsection

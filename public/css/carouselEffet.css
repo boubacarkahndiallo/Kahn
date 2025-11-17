@@ -1,0 +1,81 @@
+        /* Animation fluide + flou depuis la gauche */
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-80px);
+            filter: blur(6px);
+            animation: slideInLeft 1.4s ease-out forwards;
+        }
+
+        /* Délais progressifs */
+        .delay-1 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.9s;
+        }
+
+        .delay-3 {
+            animation-delay: 1.5s;
+        }
+
+        /* Animation clé : glissement + disparition du flou */
+        @keyframes slideInLeft {
+            0% {
+                opacity: 0;
+                transform: translateX(-100px);
+                filter: blur(8px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+                filter: blur(0);
+            }
+        }
+
+        /* Style personnalisé */
+        .mourima {
+            color: #ff0000;
+            font-weight: bold;
+        }
+
+        .chez {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            background-color: #09b125;
+            padding: 0 2px;
+            /* border-radius: 4px; */
+        }
+
+        /* 🔹 Adaptation pour téléphones (moins de 768px de large) */
+        @media (max-width: 768px) {
+            .chez {
+                font-size: 16px;
+                /* Taille réduite sur mobile */
+                padding: 0 6px;
+            }
+        }
+
+        /* 🔹 Encore plus petit (moins de 480px — très petits écrans) */
+        @media (max-width: 480px) {
+            .chez {
+                font-size: 14px;
+                padding: 0 4px;
+            }
+        }
+
+
+
+        /* Bouton stylé */
+        .hvr-hover {
+            background-color: #09b125;
+            border: none;
+            transition: 0.3s ease;
+        }
+
+        .hvr-hover:hover {
+            background-color: #067a1d;
+            color: #fff;
+        }

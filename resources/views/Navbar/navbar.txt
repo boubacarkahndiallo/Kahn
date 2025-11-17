@@ -1,0 +1,38 @@
+  // Vue facture
+    btnVue.addEventListener('click', function () {
+        const factureHTML = genererFactureHTML();
+        const factureWindow = window.open("", "Facture", "width=800,height=600");
+        factureWindow.document.write(`<html><head><title>Facture</title></head><body>${factureHTML}</body></html>`);
+        factureWindow.document.close();
+    });
+
+    // Print facture
+    btnPrint.addEventListener('click', function () {
+        const factureHTML = genererFactureHTML();
+        const printWindow = window.open("", "Print Facture", "width=800,height=600");
+        printWindow.document.write(`<html><head><title>Imprimer Facture</title></head><body>${factureHTML}</body></html>`);
+        printWindow.document.close();
+        printWindow.print();
+    });
+
+    // Download PDF (simple via jsPDF)
+    btnPDF.addEventListener('click', function () {
+        if (typeof jsPDF === 'undefined') {
+            alert("Veuillez inclure jsPDF pour télécharger en PDF.");
+            return;
+        }
+        const doc = new jsPDF();
+        let y = 10;
+        doc.setFontSize(16);
+        doc.text("Facture", 105, y, { align: "center" });
+        y += 10;
+        doc.setFontSize(12);
+        produits.forEach(p => {
+            doc.text(`${p.nom} - ${p.qty} x ${new Intl.NumberFormat('fr-FR').format(p.prix)} = ${new Intl.NumberFormat('fr-FR').format(p.total)} GNF`, 10, y);
+            y += 7;
+        });
+        const totalGeneral = produits.reduce((sum, p) => sum + p.total, 0);
+        y += 5;
+        doc.text(`Total Général: ${new Intl.NumberFormat('fr-FR').format(totalGeneral)} GNF`, 10, y);
+        doc.save("facture.pdf");
+    });

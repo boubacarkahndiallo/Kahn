@@ -1,0 +1,59 @@
+/* Conteneur de chaque produit */
+.products-single {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    /* contenu aligné en haut */
+    margin-bottom: 30px;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    width: 100%;
+    transition: transform 0.3s;
+}
+
+.products-single:hover {
+    transform: translateY(-5px);
+}
+
+/* Image du produit */
+.products-single .box-img-hover img {
+    height: 220px;
+    /* hauteur augmentée */
+    width: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Texte et prix */
+.products-single .why-text {
+    padding: 10px;
+    text-align: center;
+}
+
+/* Nom du produit */
+.products-single .why-text h4 {
+    font-size: 16px;
+    height: 40px;
+    /* limite la hauteur pour uniformité */
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+/* Prix */
+.products-single .why-text h5 {
+    color: #ffffff;
+    font-weight: bold;
+    height: 25px;
+    /* line-height: 25px;  */
+    margin: 0;
+}
+
+/* Masque icônes et panier */
+.products-single .mask-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+

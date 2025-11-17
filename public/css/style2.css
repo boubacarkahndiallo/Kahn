@@ -1,0 +1,381 @@
+/* style2.css — version modernisée pour la page d'accueil
+   Extracted styles: categories, avantages, services, CTA
+   Usage: <link rel="stylesheet" href="{{ asset('css/style2.css') }}"> in Blade
+*/
+:root {
+    --brand: #1c911e;
+    --muted: #5b5b5b;
+    --heading: #0e1720;
+    --shadow: rgba(16, 24, 40, 0.06);
+}
+
+/* Container */
+.container {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding-left: 15px;
+    padding-right: 15px;
+    box-sizing: border-box;
+}
+
+/* Section headings */
+.title-all h1,
+.advantages h2 {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    letter-spacing: .6px;
+    margin-bottom: .4rem;
+    color: var(--heading)
+}
+
+.title-all p,
+.advantages p.lead {
+    color: var(--muted);
+    font-size: 1.05rem
+}
+
+/* Small green separator under titles */
+.section-hr {
+    width: 72px;
+    height: 4px;
+    background: var(--brand);
+    border-radius: 4px;
+    margin: .6rem auto 1.2rem
+}
+
+/* Categories */
+.category-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    display: block;
+    box-shadow: 0 8px 24px var(--shadow);
+}
+
+.category-card img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    transition: transform .45s cubic-bezier(.2, .8, .2, 1), filter .45s
+}
+
+.category-card:hover img {
+    transform: scale(1.06);
+    filter: contrast(1.03) saturate(1.05)
+}
+
+.category-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 22px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5))
+}
+
+.category-overlay h4 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700
+}
+
+.category-overlay p {
+    color: rgba(255, 255, 255, 0.92);
+    margin-top: 6px;
+    font-size: .95rem
+}
+
+/* Avantages */
+.advantages {
+    padding: 80px 0
+}
+
+.advantages .adv-icon {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(28, 145, 30, 0.10);
+    color: var(--brand);
+    font-size: 26px;
+    margin: 0 auto 15px
+}
+
+.advantages h5 {
+    font-weight: 700
+}
+
+/* Services */
+.service-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 12px 30px var(--shadow);
+    transition: transform .28s ease, box-shadow .28s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column
+}
+
+.service-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 22px 48px rgba(16, 24, 40, 0.08)
+}
+
+.service-card .service-img {
+    height: 200px;
+    overflow: hidden;
+    border-radius: 8px
+}
+
+.service-card .service-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .45s ease
+}
+
+.service-card .service-img img:hover {
+    transform: scale(1.03)
+}
+
+/* CTA */
+.cta-final {
+    background-size: cover;
+    background-position: center
+}
+
+.cta-overlay {
+    background: rgba(28, 145, 30, 0.60);
+    padding: 80px 0;
+    color: #fff
+}
+
+.btn-cta {
+    background: var(--brand);
+    color: #fff;
+    padding: .85rem 1.4rem;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(28, 145, 30, 0.18);
+    font-weight: 700;
+    border: none
+}
+
+.btn-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 44px rgba(28, 145, 30, 0.20)
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5 {
+    color: var(--heading)
+}
+
+/* Responsive tweaks */
+@media (max-width:991px) {
+    .category-card img {
+        height: 180px
+    }
+
+    .service-card .service-img {
+        height: 160px
+    }
+
+    .advantages {
+        padding: 40px 0
+    }
+
+    .title-all h1 {
+        font-size: 1.6rem
+    }
+}
+
+/* Utility */
+.text-muted {
+    color: #6c757d !important
+}
+
+/* End of style2.css */
+
+/* Reveal animations */
+.reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity .7s ease, transform .7s cubic-bezier(.2, .8, .2, 1);
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.reveal[data-delay="100"] {
+    transition-delay: .08s;
+}
+
+.reveal[data-delay="200"] {
+    transition-delay: .16s;
+}
+
+.reveal[data-delay="300"] {
+    transition-delay: .24s;
+}
+
+.stagger-row>* {
+    opacity: 0;
+    transform: translateY(18px);
+}
+
+.stagger-row.visible>* {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all .6s cubic-bezier(.2, .8, .2, 1);
+}
+
+.stagger-row.visible>*:nth-child(1) {
+    transition-delay: .06s
+}
+
+.stagger-row.visible>*:nth-child(2) {
+    transition-delay: .12s
+}
+
+.stagger-row.visible>*:nth-child(3) {
+    transition-delay: .18s
+}
+
+/* subtle parallax-like background on CTA using transform on scroll (CSS only fallback) */
+.cta-final::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    opacity: .12;
+    transform: scale(1.04);
+    filter: blur(2px);
+    z-index: 0
+}
+
+.cta-final>.cta-overlay,
+.cta-final .container {
+    position: relative;
+    z-index: 1
+}
+
+/* small utility for center */
+.d-center {
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+
+/* End animations */
+
+/* ========== SIDE PANELS (Panier & Moi) ========== */
+
+/* Side panels fix for horizontal scrollbar issue */
+html,
+body {
+    overflow-x: hidden;
+}
+
+/* Side panel styles */
+.side {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: 100vh;
+    background: white;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.side.on {
+    right: 0;
+    z-index: 10001;
+}
+
+.side .close-side {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 24px;
+    color: #666;
+    transition: color 0.3s ease;
+}
+
+.side .close-side:hover {
+    color: #1c911e;
+}
+
+.side .cart-box {
+    margin-top: 40px;
+}
+
+.side .cart-list {
+    list-style: none;
+    padding: 0;
+}
+
+.side .cart-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.side .cart-list li.total {
+    padding: 15px 0;
+    border-bottom: 2px solid #1c911e;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Body overflow-y when side panels are open */
+body.side-open {
+    overflow-y: hidden;
+    padding-right: 0;
+}
+
+/* Scrollbar fix for side panels */
+.side::-webkit-scrollbar {
+    width: 6px;
+}
+
+.side::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.side::-webkit-scrollbar-thumb {
+    background: #1c911e;
+    border-radius: 3px;
+}
+
+.side::-webkit-scrollbar-thumb:hover {
+    background: #145a14;
+}
+
+/* Responsive side panels */
+@media (max-width: 768px) {
+    .side {
+        width: 300px;
+        right: -300px;
+    }
+
+    .side.on {
+        right: 0;
+    }
+}

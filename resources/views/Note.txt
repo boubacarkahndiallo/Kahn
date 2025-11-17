@@ -1,0 +1,10 @@
+Les droits :
+- Super Admin à tous les droits
+- Admin à presque tous les droits sauf ajouté les super_admin et admin ou choisir le role super_admin ou admin
+
+Création d'utilisateur:
+Après la création d'un utilisateur, le system lui créera un mot de passe automatique avec les 4 derniers chiffre
+de son numéro de téléphone dans Service - WhatsAppService "generatePassword"
+
+
+Mon token : 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

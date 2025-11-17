@@ -1,0 +1,72 @@
+<?php
+use Twilio\Rest\Client;
+
+public function sendSMS()
+{
+    $sid    = env('TWILIO_SID');
+    $token  = env('TWILIO_AUTH_TOKEN');
+    $twilio = new Client($sid, $token);
+
+    $twilio->messages->create(
+        "+224XXXXXXXX", // numéro du destinataire
+        [
+            "from" => env('TWILIO_PHONE'),
+            "body" => "Bonjour, ceci est un test SMS depuis Laravel 🚀"
+        ]
+    );
+
+    return "SMS envoyé avec succès";
+}
+
+// 2e methode avec Africa's
+
+// <!-- <?php
+
+// namespace App\Http\Controllers;
+
+// use Illuminate\Http\Request;
+// use Africastalking\SDK;
+
+// class SMSController extends Controller
+// {
+//     protected $sms;
+
+//     public function __construct()
+//     {
+//         $username = env('AT_USERNAME'); // ton username Africa's Talking
+//         $apiKey   = env('AT_API_KEY');   // ton apiKey
+
+//         $AT = new SDK($username, $apiKey);
+//         $this->sms = $AT->sms();
+//     }
+
+//     // Méthode pour envoyer un SMS
+//     public function sendSMS(Request $request)
+//     {
+//         // Validation basique
+//         $request->validate([
+//             'to'   => 'required|string',   // numéro destinataire avec indicatif pays +224XXXXXXX
+//             'text' => 'required|string',   // contenu du SMS
+//         ]);
+
+//         try {
+//             $result = $this->sms->send([
+//                 'to'   => $request->to,
+//                 'message' => $request->text,
+//                 'from' => 'MyApp' // nom de l'expéditeur (optionnel)
+//             ]);
+
+//             return response()->json([
+//                 'success' => true,
+//                 'result' => $result
+//             ]);
+
+//         } catch (\Exception $e) {
+//             return response()->json([
+//                 'success' => false,
+//                 'error' => $e->getMessage()
+//             ]);
+//         }
+//     }
+// }
+//  -->

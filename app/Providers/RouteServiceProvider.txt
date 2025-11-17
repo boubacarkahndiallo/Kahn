@@ -1,0 +1,16 @@
+<?php
+
+use Illuminate\Support\Facades\RateLimier;
+use Illuminate\Support\Facades\Route;
+use PhpParser\Node\Expr\Cast\Void_;
+
+class RouteServiceProvider extends ServiceProvider
+{
+    @var string
+
+    public const HOME = '/user_checker';
+
+    @var string|null
+
+    @return void
+}
