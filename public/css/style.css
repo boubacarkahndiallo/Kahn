@@ -39,6 +39,31 @@ body {
     line-height: 1.80857;
 }
 
+/* --------------------------------------------------------------------------
+   Desktop: ensure the nav logo uses its natural dimensions and is not reduced.
+   This override targets >=992px and also ensures scrolled/display variants keep size.
+   ------------------------------------------------------------------------ */
+@media (min-width: 992px) {
+    nav.navbar .navbar-brand img.logo,
+    nav.navbar .navbar-brand .logo,
+    nav.navbar .logo-display img,
+    nav.navbar .logo-scrolled img {
+        width: auto !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+        object-fit: none !important;
+        flex-shrink: 0 !important;
+        display: inline-block !important;
+    }
+
+    /* Prevent the brand container from setting a width/height cap */
+    nav.navbar .navbar-brand {
+        width: auto !important;
+        min-width: 0 !important;
+    }
+}
+
 /* Avatar */
 .cart-user {
     display: flex;
