@@ -102,6 +102,58 @@ class CommandeController extends Controller
 
         $client = Client::findOrFail($request->client_id);
 
+        // Idempotency token from client (optional)
+        $clientOrderUuid = $request->input('client_order_uuid') ?? null;
+
+        // Merge with existing draft commande (created previously with prix_total=0 and produits empty)
+        // to avoid creating duplicate orders when a draft was created earlier (e.g. during client registration)
+        if (empty($clientOrderUuid)) {
+            $draft = Commande::where('client_id', $client->id)
+                ->where('statut', 'en_cours')
+                ->where(function ($q) {
+                    $q->whereNull('produits')->orWhere('prix_total', 0)->orWhereRaw("JSON_LENGTH(COALESCE(produits, '[]')) = 0");
+                })->orderBy('created_at', 'desc')->first();
+
+            if ($draft) {
+                // Update draft instead of creating a new commande
+                $draft->produits = $request->produits;
+                $draft->prix_total = $request->prix_total;
+                $draft->statut = $request->statut;
+                $draft->date_commande = now();
+                $draft->client_order_uuid = $clientOrderUuid;
+                $draft->save();
+
+                // ensure numero_commande exists
+                if (empty($draft->numero_commande)) {
+                    $draft->numero_commande = 'CMD-' . str_pad($draft->id, 3, '0', STR_PAD_LEFT);
+                    $draft->save();
+                }
+
+                $commande = $draft;
+
+                // respond as if created (idempotent)
+                $responsePayload = [
+                    'success' => true,
+                    'message' => 'Commande mise à jour depuis un brouillon existant.',
+                    'commande' => [
+                        'id' => $commande->id,
+                        'numero_commande' => $commande->numero_commande,
+                        'client_id' => $commande->client_id,
+                        'client_nom' => $client->nom,
+                        'produits' => $commande->produits,
+                        'prix_total' => $commande->prix_total,
+                        'statut' => $commande->statut,
+                        'date_commande' => $commande->date_commande->format('d/m/Y H:i'),
+                    ],
+                ];
+
+                if ($request->wantsJson() || $request->ajax() || str_contains($request->header('Accept') ?? '', 'application/json')) {
+                    return response()->json($responsePayload);
+                }
+
+                return redirect()->route('commandes.index')->with('success', $responsePayload['message']);
+            }
+        }
         // Idempotency: if client provides `client_order_uuid`, check for existing commande
         $clientOrderUuid = $request->input('client_order_uuid') ?? null;
         if ($clientOrderUuid) {

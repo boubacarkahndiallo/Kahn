@@ -70,6 +70,163 @@
 <header class="main-header">
     <!-- Start Navigation -->
     <style>
+        /* --- NAVBAR MOBILE STYLE APP --- */
+        @media (max-width: 991px) {
+            nav.navbar {
+                background: linear-gradient(135deg, #1c911e 0%, #14680f 100%) !important;
+                border-radius: 0 0 22px 22px !important;
+                box-shadow: 0 6px 24px rgba(28, 145, 30, 0.18), 0 2px 8px rgba(28, 145, 30, 0.22) !important;
+                position: fixed !important;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 2000;
+                width: 100vw;
+                min-height: 62px;
+                padding: 0 0.5rem !important;
+                margin: 0 auto !important;
+                transition: box-shadow 0.3s;
+            }
+
+            nav.navbar .container {
+                border-radius: 0 0 22px 22px;
+                background: transparent !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            nav.navbar .navbar-header {
+                margin-bottom: 0.2rem;
+            }
+
+            nav.navbar .navbar-brand img.logo {
+                border-radius: 10px !important;
+                box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+                background: #fff;
+                padding: 0.5rem 0 !important;
+                margin-top: 38px !important;
+                /* Augmente l'espace au-dessus du logo sur mobile */
+            }
+
+            nav.navbar .navbar-brand .brand-text {
+                font-size: 1.15rem;
+                font-weight: 900;
+                color: #fff !important;
+                letter-spacing: 0.5px;
+                text-shadow: 0 2px 8px rgba(28, 145, 30, 0.12);
+            }
+
+            .navbar-toggler {
+                background: #fff !important;
+                border-radius: 50% !important;
+                width: 34px;
+                height: 34px;
+                box-shadow: 0 2px 6px rgba(28, 145, 30, 0.08);
+                color: #1c911e !important;
+                font-size: 1.05rem !important;
+                border: none !important;
+                padding: 0;
+            }
+
+            #navbar-menu {
+                background: rgba(255, 255, 255, 0.98) !important;
+                border-radius: 18px !important;
+                margin-top: 0.5rem;
+                box-shadow: 0 2px 12px rgba(28, 145, 30, 0.10);
+                padding: 0.5rem 0.5rem 0.7rem 0.5rem !important;
+            }
+
+            #navbar-menu .navbar-nav {
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 0.2rem !important;
+            }
+
+            #navbar-menu .nav-link {
+                color: #1c911e !important;
+                font-size: 1.08rem !important;
+                font-weight: 700;
+                border-radius: 12px;
+                padding: 0.5rem 1.1rem !important;
+                margin: 0.1rem 0;
+                background: #f8f9fa !important;
+                box-shadow: 0 1px 4px rgba(28, 145, 30, 0.07);
+                transition: background 0.2s, color 0.2s;
+            }
+
+            #navbar-menu .nav-link.active,
+            #navbar-menu .nav-link:active,
+            #navbar-menu .nav-link:focus {
+                background: #1c911e !important;
+                color: #fff !important;
+            }
+
+            .attr-nav ul {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: center !important;
+                align-items: center !important;
+                gap: 0.7rem !important;
+                margin: 0.2rem 0 0.1rem 0 !important;
+                padding: 0 !important;
+            }
+
+            .attr-nav ul li {
+                background: #fff;
+                border-radius: 50%;
+                box-shadow: 0 1px 6px rgba(28, 145, 30, 0.08);
+                width: 36px;
+                height: 36px;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 0 2px;
+                position: relative;
+                padding: 0 !important;
+            }
+
+            .attr-nav ul li a {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            .attr-nav ul li i {
+                font-size: 1.05rem !important;
+                color: #1c911e !important;
+                margin: 0 !important;
+            }
+
+            .attr-nav ul li .badge {
+                position: absolute;
+                top: -4px;
+                right: -4px;
+                background: #e74c3c;
+                color: #fff;
+                font-size: 0.75rem;
+                border-radius: 50%;
+                min-width: 18px;
+                min-height: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 1px 4px rgba(231, 76, 60, 0.12);
+            }
+
+            /* Afficher le bouton login sur mobile quand pas connecté */
+            .login-btn-mobile {
+                display: flex !important;
+            }
+
+            /* Effet flottant sur mobile */
+            nav.navbar {
+                box-shadow: 0 8px 32px rgba(28, 145, 30, 0.18), 0 2px 8px rgba(28, 145, 30, 0.22) !important;
+            }
+        }
+
         /* Align menu links to the right on large screens while keeping the logo on the left */
         @media (min-width: 992px) {
 
@@ -109,32 +266,23 @@
                 width: auto;
             }
 
-            /* Center the navbar header on mobile */
+            /* Navbar header à gauche sur mobile */
             nav.navbar .navbar-header {
                 position: relative;
                 width: 100%;
                 display: flex;
-                justify-content: center;
+                justify-content: flex-start;
                 align-items: center;
                 margin-bottom: 1rem;
                 gap: 0.5rem;
             }
 
-            /* Adjust toggle button position to the left */
-            nav.navbar .navbar-toggler {
-                position: absolute;
-                left: 15px;
-                top: 50%;
-                transform: translateY(-50%);
-                order: -1;
-            }
-
-            /* Make the brand a flex container with logo then text */
+            /* Marque/logo aligné à gauche */
             nav.navbar .navbar-brand {
                 margin: 0 !important;
                 display: flex !important;
                 align-items: center !important;
-                justify-content: center !important;
+                justify-content: flex-start !important;
                 gap: 0.6rem !important;
                 padding: 0 !important;
                 flex-direction: row !important;
@@ -166,16 +314,297 @@
             }
         }
     </style>
+    <!-- Footer navbar mobile -->
+    <nav id="mobile-footer-navbar" class="d-lg-none">
+        <ul>
+            <li>
+                <a href="{{ route('app_accueil') }}" aria-label="Accueil">
+                    <i class="fa fa-home"></i>
+                    <span>Accueil</span>
+                </a>
+            </li>
+            @auth
+                <li>
+                    <a href="{{ route('app_dashboard') }}" aria-label="Dashboard">
+                        <i class="fa fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+            @endauth
+
+            <li class="footer-prd-dropdown" style="position:relative;">
+                <a href="#" aria-label="Produits" id="footer-prd-toggle" aria-label="Produits">
+                    <i class="fa fa-shopping-cart"></i>
+                    <span>Produits</span>
+                </a>
+                <ul id="footer-prd-menu" class="footer-dropdown-menu"
+                    style="display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%); background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(28,145,30,0.12); min-width:120px; z-index:4000;">
+                    @if (auth()->check() && !in_array(auth()->user()->role, ['client', 'fournisseur']))
+                        <li><a href="{{ route('produits.index') }}">Ajout produit</a></li>
+                    @endif
+                    <li><a href="{{ route('produits.allproduit') }}">Nos produits</a></li>
+                </ul>
+            </li>
+
+            </li>
+            @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'super_admin']))
+                <li class="footer-user-dropdown" style="position:relative;">
+                    <a href="#" id="footer-user-toggle" aria-label="Utilisateurs">
+                        <i class="fa fa-users"></i>
+                        <span>Utilisateurs</span>
+                    </a>
+                    <ul id="footer-user-menu" class="footer-dropdown-menu"
+                        style="display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%); background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(28,145,30,0.12); min-width:120px; z-index:4000;">
+                        <li><a href="{{ route('admin.users.index') }}">Utilisateur</a></li>
+                        <li><a href="{{ route('clients.index') }}">Client</a></li>
+                        <li><a href="#">Fournisseur</a></li>
+                    </ul>
+                </li>
+            @endif
+            @if (auth()->check() && !in_array(auth()->user()->role, ['client', 'fournisseur']))
+                <li class="footer-cmd-dropdown" style="position:relative;">
+                    <a href="#" id="footer-cmd-toggle" aria-label="Commandes">
+                        <i class="fa fa-list"></i>
+                        <span>Commandes</span>
+                    </a>
+                    <ul id="footer-cmd-menu" class="footer-dropdown-menu"
+                        style="display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%); background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(28,145,30,0.12); min-width:120px; z-index:4000;">
+                        <li><a href="{{ route('commandes.index') }}">Commandes</a></li>
+                        <li><a href="{{ route('livraisons.index') }}">Livraisons</a></li>
+                    </ul>
+                </li>
+            @endif
+            <li>
+                <a href="{{ route('app_contact') }}" aria-label="Contact">
+                    <i class="fa fa-envelope"></i>
+                    <span>Contact</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" id="footer-moi" aria-label="Profil">
+                    <i class="fa fa-user"></i>
+                    <span>Moi</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <style>
+        .footer-dropdown-menu.show {
+            display: block !important;
+        }
+
+        .footer-dropdown-menu {
+            display: none;
+        }
+
+        /* Masquer l'icône "Moi" dans la navbar principale sur mobile (ne pas toucher au footer ni au desktop) */
+        @media (max-width: 991px) {
+            .side-moi {
+                display: none !important;
+            }
+
+            /* Règle plus spécifique pour surcharger d'autres styles */
+            nav.navbar .attr-nav ul li.side-moi,
+            nav.navbar .attr-nav li.side-moi {
+                display: none !important;
+            }
+        }
+
+        #mobile-footer-navbar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            background: linear-gradient(135deg, #fff 80%, #e8f5e9 100%);
+            box-shadow: 0 -2px 16px rgba(28, 145, 30, 0.10);
+            z-index: 3000;
+            border-radius: 18px 18px 0 0;
+            padding: 0.2rem 0 0.1rem 0;
+        }
+
+        #mobile-footer-navbar ul {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        #mobile-footer-navbar li {
+            flex: 1 1 0;
+            text-align: center;
+        }
+
+        #mobile-footer-navbar a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #1c911e;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 0.3rem 0 0.1rem 0;
+            transition: color 0.2s;
+        }
+
+        #mobile-footer-navbar a:active,
+        #mobile-footer-navbar a:focus {
+            color: #14680f;
+        }
+
+        #mobile-footer-navbar i {
+            font-size: 1.35rem;
+            margin-bottom: 2px;
+        }
+
+        #mobile-footer-navbar span {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Réduire la taille des boutons prev/next du slider sur mobile */
+        @media (max-width: 991px) {
+
+            .slides-navigation a.next,
+            .slides-navigation a.prev {
+                width: 34px;
+                height: 34px;
+                line-height: 34px;
+                font-size: 1rem;
+                border-radius: 50%;
+                background: #1c911e; /* fond vert */
+                color: #fff !important;
+                padding: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .slides-navigation a.next i,
+            .slides-navigation a.prev i {
+                font-size: 0.9rem !important;
+            }
+            .slides-navigation a.next:hover,
+            .slides-navigation a.prev:hover {
+                background: #14680f; /* teinte plus foncée au hover */
+                color: #fff !important;
+            }
+        }
+
+        @media (min-width: 992px) {
+            #mobile-footer-navbar {
+                display: none !important;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ouvre le panneau Moi depuis le footer
+            const btnMoi = document.getElementById('footer-moi');
+            if (btnMoi) {
+                btnMoi.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sideMoi = document.getElementById('side-moi');
+                    if (sideMoi) sideMoi.classList.add('on');
+                });
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dropdown utilisateur mobile
+            const userToggle = document.getElementById('footer-user-toggle');
+            const userMenu = document.getElementById('footer-user-menu');
+            if (userToggle && userMenu) {
+                userToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    userMenu.classList.toggle('show');
+                });
+                document.addEventListener('click', function(e) {
+                    if (!userToggle.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+
+        // Initialiser autoplay du slider sur mobile seulement
+        (function() {
+            function initMobileAutoplay() {
+                try {
+                    var isMobile = window.matchMedia && window.matchMedia('(max-width: 991px)').matches;
+                    if (isMobile && window.jQuery && jQuery.fn.superslides) {
+                        var $slides = jQuery('#slides-shop');
+                        // évitez la ré-initialisation si déjà initialisé
+                        if (!$slides.data('superslides')) {
+                            $slides.superslides({
+                                play: 4000,
+                                animation: 'fade',
+                                pagination: false
+                            });
+                        } else {
+                            // si déjà initialisé, déclencher play si possible
+                            try {
+                                $slides.superslides('start');
+                            } catch (e) {}
+                        }
+                    }
+                } catch (e) {
+                    console && console.warn && console.warn('Init mobile autoplay failed', e);
+                }
+            }
+
+            // Init au chargement complet (images chargées)
+            window.addEventListener('load', function() {
+                setTimeout(initMobileAutoplay, 250);
+            });
+            // Et aussi à resize pour gérer changement d'orientation
+            window.addEventListener('resize', function() {
+                setTimeout(initMobileAutoplay, 300);
+            });
+        })();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dropdown Commandes mobile
+            const userToggle = document.getElementById('footer-cmd-toggle');
+            const userMenu = document.getElementById('footer-cmd-menu');
+            if (userToggle && userMenu) {
+                userToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    userMenu.classList.toggle('show');
+                });
+                document.addEventListener('click', function(e) {
+                    if (!userToggle.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dropdown Commandes mobile
+            const userToggle = document.getElementById('footer-prd-toggle');
+            const userMenu = document.getElementById('footer-prd-menu');
+            if (userToggle && userMenu) {
+                userToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    userMenu.classList.toggle('show');
+                });
+                document.addEventListener('click', function(e) {
+                    if (!userToggle.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar-default bootsnav">
         <div class="container">
             <div class="navbar-header">
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu"
-                    aria-controls="navbars-rs-food" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="fa fa-bars"></i>
-                </button>
                 <a class="navbar-brand" href="{{ route('app_accueil') }}">
                     <img src="{{ asset('images/logo1.png') }}"
-                        srcset="{{ asset('images/logo1.png') }} 1x, {{ asset('images/logo1.jpg') }} 2x" class="logo"
+                        srcset="{{ asset('images/logo1.png') }} 1x, {{ asset('images/logo1.png') }} 2x" class="logo"
                         alt="Logo">
                     <span class="brand-text">Mourima Market</span>
                 </a>
@@ -228,7 +657,6 @@
             <div class="attr-nav">
                 <ul>
                     <li class="search"><a href="#"><i class="fa fa-search"></i></a></li>
-
                     @auth
                         @if (auth()->user()->role === 'admin' || auth()->user()->role === 'super_admin')
                             <li class="side-notifications" style="position: relative;">
@@ -240,19 +668,22 @@
                             </li>
                         @endif
                     @endauth
-
-                    <li class="side-moi">
-                        <a href="#">
+                    @guest
+                        <li class="login-btn-mobile" style="display: none;">
+                            <a href="{{ route('login') }}" title="Se connecter">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </a>
+                        </li>
+                    @endguest
+                    <li class="side-moi d-none d-lg-flex">
+                        <a href="#" class="d-none d-lg-flex">
                             <i class="fa fa-user" id="btn-moi"></i>
-                            {{-- <p>Moi</p> --}}
                         </a>
                     </li>
-
                     <li class="side-menu">
                         <a href="#">
                             <i class="fa fa-shopping-cart"></i>
                             <span class="badge bg-success" id="cart-count">0</span>
-                            {{-- <p>Panier</p> --}}
                         </a>
                     </li>
                 </ul>

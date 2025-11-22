@@ -194,7 +194,7 @@
                                 <i class="fas fa-phone text-success me-2"></i>{{ $user->tel }}
                             </td>
                             <td class="user-email">
-                                <i class="fas fa-envelope text-info me-2"></i>
+                                <i class="fas fa-envelope text-success me-2"></i>
                                 <small>{{ $user->email }}</small>
                             </td>
                             <td class="text-center">

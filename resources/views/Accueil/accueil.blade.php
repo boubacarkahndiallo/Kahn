@@ -89,6 +89,53 @@
 
         /* Forcer visibilité sur petits écrans : bouton et texte du slider */
         @media (max-width: 576px) {
+            .cover-slides {
+                height: 50vh !important;
+                min-height: 280px !important;
+                max-height: 60vh !important;
+                overflow: hidden !important;
+            }
+
+            .cover-slides .slides-container {
+                height: 100% !important;
+                width: 100% !important;
+                list-style: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .cover-slides .slides-container li {
+                height: 100% !important;
+                width: 100% !important;
+                display: block !important;
+                position: relative !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background-size: cover !important;
+                background-position: center !important;
+            }
+
+            .cover-slides .slides-container li img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+                object-position: center !important;
+                display: block !important;
+            }
+
+            .cover-slides .slides-container li .container {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                z-index: 10 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
             .cover-slides .container {
                 z-index: 9999 !important;
             }
@@ -122,9 +169,10 @@
     <!-- Start Slider -->
     <div id="slides-shop" class="cover-slides">
         <ul class="slides-container">
-            @foreach (['banner-01.jpg', 'banner-02.jpg', 'banner-03.jpg'] as $banner)
-                <li>
-                    <img src="{{ asset('images/' . $banner) }}" alt="">
+            @foreach (['banner-01.jpg', 'banner-02.jpg', 'banner-03.jpg'] as $index => $banner)
+                <li data-slide="{{ $index + 1 }}">
+                    <img src="{{ asset('images/' . $banner) }}" alt="Slide {{ $index + 1 }}"
+                        data-banner="{{ $banner }}">
                     <div class="container">
                         <div class="row">
                             <div class="col-md-12">
@@ -298,6 +346,44 @@
 
     @push('scripts')
         <script>
+            // Fix superslides cloning issue - ensure cloned images have correct src
+            $(document).ready(function() {
+                // Store original image sources before superslides modifies DOM
+                const originalImages = {};
+                $('.slides-container li').each(function(index) {
+                    const img = $(this).find('img');
+                    originalImages[index] = img.attr('src');
+                });
+
+                // After superslides initializes, fix any cloned images
+                setTimeout(function() {
+                    $('.slides-container li img').each(function(index) {
+                        const $img = $(this);
+                        const parentIndex = $img.closest('li').index();
+                        const correctSrc = originalImages[parentIndex % Object.keys(originalImages)
+                            .length];
+                        if (correctSrc && !$img.attr('src').includes(correctSrc.split('/').pop())) {
+                            $img.attr('src', correctSrc);
+                        }
+                    });
+                }, 100);
+            });
+
+            // Force slider recalculation after images load to fix mobile display
+            $(window).on('load', function() {
+                setTimeout(function() {
+                    try {
+                        // Trigger resize to recalculate slider dimensions
+                        $(window).trigger('resize');
+                        if ($.fn.superslides) {
+                            $('#slides-shop').superslides('animate');
+                        }
+                    } catch (e) {
+                        console.log('Slider recalc:', e);
+                    }
+                }, 300);
+            });
+
             // Small IntersectionObserver to add .visible to .reveal elements
             document.addEventListener('DOMContentLoaded', function() {
                 const revealElements = document.querySelectorAll('.reveal');

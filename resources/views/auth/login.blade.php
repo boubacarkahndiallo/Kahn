@@ -6,8 +6,8 @@
             <img src="{{ asset('images/logo1.png') }}" alt="Mourima Market Logo" class="logo-img">
         </div>
         <h1 class="login-title">Bienvenue</h1>
-        {{-- <h2 class="login-brand-name">Mourima Market</h2> --}}
-        {{-- <p class="login-subtitle">Vos articles vous attendent</p> --}}
+        {{-- <h2 class="login-brand-name">Accès limité qu'aux personnels</h2> --}}
+        <p class="login-subtitle">Accès autorisé qu'au personnel</p>
     </div>
     <form method="POST" action="{{ route('login') }}">
         @csrf
@@ -39,7 +39,7 @@
                 <input type="password" name="password" id="password"
                     class="form-control @error('password') is-invalid @enderror" required autocomplete="current-password"
                     placeholder="••••••••">
-                <i class="fas fa-eye toggle-password" id="toggle-password-icon"></i>
+                <i class="fas fa-eye-slash toggle-password" id="toggle-password-icon"></i>
             </div>
             @error('password')
                 <small class="text-danger d-block mt-2">{{ $message }}</small>

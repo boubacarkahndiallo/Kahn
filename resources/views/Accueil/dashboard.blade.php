@@ -108,12 +108,15 @@
                         <i class="fa fa-users fa-lg" style="color: #666;"></i>
                     </div>
                     <div class="stat-content flex-grow-1">
-                        <div class="stat-label">Clients</div>
+                        <div class="stat-label">
+                            Clients
+                        </div>
                         <div style="display: flex; align-items: baseline; gap: 6px;">
                             <h3>{{ number_format($clientsCount) }}</h3>
-                            <span class="stat-label">inscrits</span </div>
+                            <span class="stat-label">inscrits</span
                         </div>
-                        <div class="stat-subtext">Nouveaux aujourd'hui : <strong>{{ $newClientsToday ?? 1 }}</strong>
+                        <div class="stat-subtext">
+                            Nouveaux aujourd'hui : <strong>{{ $newClientsToday ?? 1 }}</strong>
                         </div>
                     </div>
                 </div>

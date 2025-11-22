@@ -80,33 +80,24 @@ class ClientController extends Controller
             return back()->withErrors(['tel' => 'Ce numéro est déjà enregistré']);
         }
 
-        // 📸 Upload image si fournie
+        // Upload image si fournie
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('clients', 'public');
         }
 
-        // ⚙️ Statut par défaut
+        // Statut par défaut
         $validated['statut'] = $validated['statut'] ?? 'actif';
 
-        // 🧾 Création du client
+        // Création du client
         $client = Client::create($validated);
 
-        // 🛒 Création d'une commande vide (optionnel)
-        $commande = Commande::create([
-            'client_id' => $client->id,
-            'produits' => [],
-            'prix_total' => 0,
-            'statut' => 'en_cours',
-        ]);
+        // Note: ne plus créer une commande vide ici — la commande doit être créée
+        // seulement lorsque le client confirme réellement son panier / passe sa commande.
 
-        // Attribuer un numéro lisible basé sur l'ID (CMD-001, CMD-002, ...)
-        $commande->numero_commande = 'CMD-' . str_pad($commande->id, 3, '0', STR_PAD_LEFT);
-        $commande->save();
-
-        // 🧠 Stocker l'ID du dernier client dans la session
+        // Stocker l'ID du dernier client dans la session
         session(['last_client_id' => $client->id]);
 
-        // 🔄 Réponse AJAX (formulaire modal)
+        // Réponse AJAX (formulaire modal)
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -120,14 +111,11 @@ class ClientController extends Controller
                     'description' => $client->description,
                     'image' => $client->image ? asset('storage/' . $client->image) : null,
                 ],
-                'commande' => [
-                    'id' => $commande->id,
-                    'statut' => $commande->statut,
-                ],
+                // plus de création de commande automatique ici
             ]);
         }
 
-        // 🚀 Si c'est une requête classique
+        // Si c'est une requête classique
         return redirect()->route('produits.allproduit')
             ->with('success', 'Inscription réussie ! Vos informations ont été enregistrées.');
     }
@@ -215,7 +203,7 @@ class ClientController extends Controller
 
         $validated['tel'] = $normalized_tel;
 
-        // 📸 Mise à jour de l'image
+        // Mise à jour de l'image
         if ($request->hasFile('image')) {
             if ($client->image && Storage::disk('public')->exists($client->image)) {
                 Storage::disk('public')->delete($client->image);
