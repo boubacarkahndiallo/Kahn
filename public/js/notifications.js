@@ -1,3 +1,161 @@
+/* Notifications frontend minimal (sans build tools)
+   - charge les notifications via endpoints existants
+   - se connecte à Echo si présent
+*/
+(function () {
+    function q(sel, ctx) { return (ctx || document).querySelector(sel); }
+
+    function showSimpleToast(text) {
+        if (typeof showToast === 'function') return showToast(text);
+        // fallback simple
+        console.log('NOTIF:', text);
+        // small visual: append to notif-list if exists
+        const list = document.getElementById('notif-list');
+        if (list) {
+            const el = document.createElement('div');
+            el.className = 'p-2 border-bottom';
+            el.textContent = text;
+            list.insertBefore(el, list.firstChild);
+        }
+        return;
+    }
+
+    async function loadNotifications() {
+        try {
+            const res = await fetch('/notifications/list');
+            if (!res.ok) return;
+            const data = await res.json();
+            renderList(data.notifications || []);
+            updateCount();
+        } catch (e) {
+            console.warn('Erreur load notifications', e);
+        }
+    }
+
+    function renderList(items) {
+        const list = document.getElementById('notif-list');
+        const countEl = document.getElementById('notif-count');
+        if (!list) return;
+        list.innerHTML = '';
+        items.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'notif-item p-2';
+            el.dataset.id = n.id;
+            el.innerHTML = `<div class="d-flex justify-content-between"><div><strong>${n.title}</strong><div class="small text-muted">${n.message}</div></div><div><button class="btn btn-sm btn-link mark-read">Lu</button></div></div>`;
+            list.appendChild(el);
+        });
+
+        // attach handlers
+        list.querySelectorAll('.mark-read').forEach(btn => {
+            btn.addEventListener('click', async function (e) {
+                const id = this.closest('.notif-item').dataset.id;
+                await fetch(`/notifications/${id}/read`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') } });
+                this.closest('.notif-item').remove();
+                updateCount();
+            });
+        });
+    }
+
+    async function markAllRead() {
+        try {
+            await fetch('/notifications/read-all', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') } });
+            const list = document.getElementById('notif-list'); if (list) list.innerHTML = '';
+            updateCount();
+        } catch (e) { console.warn(e); }
+    }
+
+    async function updateCount() {
+        try {
+            const res = await fetch('/notifications/unread-count');
+            if (!res.ok) return;
+            const data = await res.json();
+            const countEl = document.getElementById('notif-count');
+            if (countEl) {
+                if (data.unread_count && data.unread_count > 0) {
+                    countEl.style.display = 'inline-block';
+                    countEl.textContent = data.unread_count;
+                } else {
+                    countEl.style.display = 'none';
+                }
+            }
+        } catch (e) { console.warn(e); }
+    }
+
+    // Echo subscriptions
+    function initEcho() {
+        if (!window.Echo) return;
+        // products
+        try { window.Echo.channel('products').listen('ProductCreated', (e) => { showSimpleToast(`Nouveau produit: ${e.nom} (${e.prix} GNF)`); loadNotifications(); updateCount(); }); } catch (e) { }
+        try { window.Echo.private('admin-orders').listen('OrderCreated', (e) => { showSimpleToast(`Nouvelle commande: ${e.numero} (${e.prix_total} GNF)`); loadNotifications(); updateCount(); }); } catch (e) { }
+        if (window.authUser && window.authUser.id) {
+            try { window.Echo.private(`user.${window.authUser.id}.notifications`).listen('OrderCreated', (e) => { showSimpleToast(`Votre commande ${e.numero} a bien été reçue`); loadNotifications(); updateCount(); }); } catch (e) { }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // load existing
+        loadNotifications();
+        updateCount();
+
+        const markAll = document.getElementById('mark-all-read');
+        if (markAll) markAll.addEventListener('click', function (e) { e.preventDefault(); markAllRead(); });
+
+        // init echo after small delay
+        setTimeout(initEcho, 500);
+    });
+
+})();
+// public/js/notifications.js
+// Script minimal pour s'abonner aux canaux broadcast Laravel et afficher des toasts.
+// Nécessite Laravel Echo + un broadcaster (pusher/laravel-websockets) configuré.
+
+(function () {
+    if (typeof Echo === 'undefined') {
+        console.warn('Echo non initialisé - activez Laravel Echo pour les notifications en temps réel.');
+        return;
+    }
+
+    // Canal public des nouveaux produits
+    try {
+        Echo.channel('products').listen('.App\\Events\\ProductCreated', function (e) {
+            console.log('Nouveau produit:', e);
+            if (typeof showToast === 'function') {
+                showToast('success', `Nouveau produit: ${e.nom} - ${e.prix} GNF`);
+            } else {
+                alert(`Nouveau produit: ${e.nom} - ${e.prix} GNF`);
+            }
+        });
+    } catch (err) {
+        console.warn('Erreur subscription products channel:', err);
+    }
+
+    // Si utilisateur connecté, s'abonner à son canal privé notifications
+    if (window.authUser && window.authUser.id) {
+        try {
+            Echo.private('user.' + window.authUser.id + '.notifications')
+                .listen('App\\Events\\OrderCreated', function (e) {
+                    // Exemple lorsque la commande est confirmée/créée
+                    if (typeof showToast === 'function') showToast('info', 'Votre commande a été enregistrée.');
+                })
+                .listen('.App\\Events\\ProductCreated', function (e) {
+                    if (typeof showToast === 'function') showToast('success', `Nouveau produit: ${e.nom}`);
+                });
+        } catch (err) {
+            console.warn('Erreur subscription user notifications:', err);
+        }
+    }
+
+    // Canal admins : si l'utilisateur est admin, s'abonner aux commandes
+    if (window.authUser && (window.authUser.role === 'admin' || window.authUser.role === 'super_admin')) {
+        try {
+            Echo.private('admin-orders').listen('App\\Events\\OrderCreated', function (e) {
+                if (typeof showToast === 'function') showToast('warning', `Nouvelle commande: ${e.numero} - ${e.prix_total} GNF`);
+            });
+        } catch (err) {
+            console.warn('Erreur subscription admin-orders:', err);
+        }
+    }
+})();
 /**
  * Gestion des notifications en temps réel pour les admins
  * Affiche les notifications de commandes reçues

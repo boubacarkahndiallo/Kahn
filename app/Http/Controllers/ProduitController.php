@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Produit;
 use Illuminate\Support\Facades\Storage;
+use App\Events\ProductCreated;
 
 class ProduitController extends Controller
 {
@@ -68,7 +69,14 @@ class ProduitController extends Controller
             $data['image'] = $request->file('image')->store('produits', 'public');
         }
 
-        Produit::create($data);
+        $produit = Produit::create($data);
+
+        // Dispatcher l'événement pour créer des notifications et diffuser en temps réel
+        try {
+            event(new ProductCreated($produit));
+        } catch (\Throwable $e) {
+            logger()->error('ProductCreated event failed: ' . $e->getMessage());
+        }
 
         return redirect()->route('produits.index')->with('success', 'Produit ajouté avec succès !');
     }

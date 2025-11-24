@@ -73,13 +73,17 @@
 
     <!-- Bootsnav JS -->
     <script src="{{ asset('js/bootsnav.js') }}"></script>
-
     <!-- Scripts globaux pour panier et infos client (disponibles sur toutes les pages) -->
     <script src="{{ asset('js/modal-cleanup.js') }}"></script>
     <script src="{{ asset('js/panier.js') }}"></script>
     <script src="{{ asset('js/client-auth.js') }}"></script>
     <script src="{{ asset('js/clientRegistration.js') }}"></script>
-    <script src="{{ asset('js/notifications.js') }}"></script>
+    @if (app()->environment('local'))
+        @vite(['resources/js/app.js'])
+    @else
+        {{-- En production, charger le bundle compilé si présent --}}
+        <script type="module" src="{{ asset('build/assets/app.js') }}"></script>
+    @endif
 
     @stack('scripts')
 </body>

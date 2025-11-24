@@ -32,7 +32,11 @@ class OrderCreated implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new PrivateChannel('admin-orders');
+        // Broadcast to admins channel and to the specific client private channel
+        return [
+            new PrivateChannel('admin-orders'),
+            new PrivateChannel('user.' . $this->commande->client_id . '.notifications'),
+        ];
     }
 
     /**

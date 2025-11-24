@@ -49,5 +49,16 @@ class CreateOrderNotification implements ShouldQueue
                 'data' => $data,
             ]);
         }
+
+        // Créer une notification pour le client (confirmation pour le client lui-même)
+        if ($client) {
+            Notification::create([
+                'user_id' => $client->id,
+                'type' => 'order',
+                'title' => 'Votre commande a été reçue',
+                'message' => 'Votre commande ' . $commande->numero_commande . ' a bien été enregistrée. Nous vous contacterons sous peu.',
+                'data' => $data,
+            ]);
+        }
     }
 }

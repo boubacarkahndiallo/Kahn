@@ -113,14 +113,13 @@
                         </div>
                         <div style="display: flex; align-items: baseline; gap: 6px;">
                             <h3>{{ number_format($clientsCount) }}</h3>
-                            <span class="stat-label">inscrits</span
-                        </div>
-                        <div class="stat-subtext">
-                            Nouveaux aujourd'hui : <strong>{{ $newClientsToday ?? 1 }}</strong>
+                            <span class="stat-label">inscrits</span </div>
+                            <div class="stat-subtext">
+                                Nouveaux aujourd'hui : <strong>{{ $newClientsToday ?? 1 }}</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
-
             </div>
             <!-- Ventes -->
             <div class="col-md-3">

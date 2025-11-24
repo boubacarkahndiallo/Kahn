@@ -6,121 +6,67 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
-    /**
-     * Afficher la page des notifications
-     */
-    public function index(): View
+    // Page listing (optional)
+    public function index()
     {
         return view('notifications.index');
     }
 
-    /**
-     * Récupérer les notifications non lues de l'utilisateur actuel
-     */
-    public function getUnread(): JsonResponse
+    // Liste les notifications de l'utilisateur connecté (limit 50)
+    public function list(Request $request): JsonResponse
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
 
-        $unreadCount = Notification::where('user_id', $user->id)
-            ->whereNull('read_at')
-            ->count();
-
-        $notifications = Notification::where('user_id', $user->id)
-            ->whereNull('read_at')
+        $notifs = Notification::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
-            ->take(10)
+            ->limit(50)
             ->get();
 
-        return response()->json([
-            'unread_count' => $unreadCount,
-            'notifications' => $notifications,
-        ]);
+        return response()->json(['notifications' => $notifs]);
     }
 
-    /**
-     * Récupérer toutes les notifications (avec pagination)
-     */
-    public function getAll(Request $request): JsonResponse
+    // Récupérer le nombre de non-lues
+    public function unreadCount(): JsonResponse
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
 
-        $perPage = $request->get('per_page', 20);
-        $notifications = Notification::where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
-
-        return response()->json($notifications);
+        $count = Notification::where('user_id', $user->id)->whereNull('read_at')->count();
+        return response()->json(['unread_count' => $count]);
     }
 
-    /**
-     * Marquer une notification comme lue
-     */
-    public function markAsRead(int $id): JsonResponse
+    // Marque une notification comme lue
+    public function markAsRead(Request $request, $id): JsonResponse
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
 
-        $notification = Notification::where('id', $id)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
+        $notification = Notification::where('id', $id)->where('user_id', $user->id)->firstOrFail();
         $notification->markAsRead();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification marquée comme lue',
-        ]);
+        return response()->json(['success' => true]);
     }
 
-    /**
-     * Marquer toutes les notifications comme lues
-     */
-    public function markAllAsRead(): JsonResponse
+    // Marque toutes comme lues
+    public function markAllRead(Request $request): JsonResponse
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
 
-        Notification::where('user_id', $user->id)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Toutes les notifications marquées comme lues',
-        ]);
+        Notification::where('user_id', $user->id)->whereNull('read_at')->update(['read_at' => now()]);
+        return response()->json(['success' => true]);
     }
 
-    /**
-     * Supprimer une notification
-     */
-    public function delete(int $id): JsonResponse
+    // Supprimer
+    public function delete(Request $request, $id): JsonResponse
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
 
-        Notification::where('id', $id)
-            ->where('user_id', $user->id)
-            ->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification supprimée',
-        ]);
+        Notification::where('id', $id)->where('user_id', $user->id)->delete();
+        return response()->json(['success' => true]);
     }
 }

@@ -36,20 +36,12 @@
                             <li><a href="{{ route('login') }}" style="color: #1c911e;"><i
                                         class="fas fa-sign-in-alt"></i> Se connecter</a></li>
                         @endif
-                        <li><a href="https://wa.me/224621554784"><i class="fab fa-whatsapp"></i> 621 55 47 84</a></li>
+                        <li><a href="https://wa.me/224623248567"><i class="fab fa-whatsapp"></i> +224 623 24 85 67</a>
+                        </li>
                     </ul>
                 </div>
             </div>
             <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                {{-- <div class="login-box">
-                    <select id="user-action" class="selectpicker show-tick form-control" data-placeholder="Connexion">
-                        @if (auth()->check() && auth()->user()->role == 'client')
-                            <option>Déconnexion</option>
-                        @else
-                            <option>S’inscrire</option>
-                        @endif
-                    </select>
-                </div> --}}
                 <div class="text-slid-box">
                     <div id="offer-box" class="carouselTicker">
                         <ul class="offer-box">
@@ -296,7 +288,7 @@
                 width: 45px !important;
                 height: auto !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 5 !important;
                 flex-shrink: 0;
             }
 
@@ -385,6 +377,16 @@
                     <i class="fa fa-user"></i>
                     <span>Moi</span>
                 </a>
+            </li>
+            <li class="footer-notif-dropdown" style="position:relative;">
+                <a href="#" id="footer-notif-toggle" aria-label="Notifications">
+                    <i class="fa fa-bell"></i>
+                    <span>Notifications</span>
+                </a>
+                <ul id="footer-notif-menu" class="footer-dropdown-menu"
+                    style="display:none; position:absolute; bottom:40px; left:6px; transform:none; background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(28,145,30,0.12); min-width:200px; z-index:4000;">
+                    <li><a href="#">Voir les notifications</a></li>
+                </ul>
             </li>
         </ul>
     </nav>
@@ -476,7 +478,8 @@
                 line-height: 34px;
                 font-size: 1rem;
                 border-radius: 50%;
-                background: #1c911e; /* fond vert */
+                background: #1c911e;
+                /* fond vert */
                 color: #fff !important;
                 padding: 0;
                 display: inline-flex;
@@ -488,9 +491,11 @@
             .slides-navigation a.prev i {
                 font-size: 0.9rem !important;
             }
+
             .slides-navigation a.next:hover,
             .slides-navigation a.prev:hover {
-                background: #14680f; /* teinte plus foncée au hover */
+                background: #14680f;
+                /* teinte plus foncée au hover */
                 color: #fff !important;
             }
         }
@@ -583,6 +588,26 @@
             }
         });
         document.addEventListener('DOMContentLoaded', function() {
+            // Dropdown Notifications mobile (ouvre depuis la gauche et seulement au clic)
+            const notifToggle = document.getElementById('footer-notif-toggle');
+            const notifMenu = document.getElementById('footer-notif-menu');
+            if (notifToggle && notifMenu) {
+                notifToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Toggle visible
+                    notifMenu.classList.toggle('show');
+                });
+
+                // Close when clicking elsewhere
+                document.addEventListener('click', function(e) {
+                    if (!notifToggle.contains(e.target) && !notifMenu.contains(e.target)) {
+                        notifMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
             // Dropdown Commandes mobile
             const userToggle = document.getElementById('footer-prd-toggle');
             const userMenu = document.getElementById('footer-prd-menu');
@@ -657,6 +682,15 @@
             <div class="attr-nav">
                 <ul>
                     <li class="search"><a href="#"><i class="fa fa-search"></i></a></li>
+                    <!-- Notifications: cloche (ouvre panneau latéral comme Moi / Panier) -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" id="nav-notifications" aria-expanded="false"
+                            style="position:relative;">
+                            <i class="fa fa-bell"></i>
+                            <span id="notif-count" class="badge bg-danger"
+                                style="position:absolute;top:-6px;right:-6px;display:none;">0</span>
+                        </a>
+                    </li>
                     @auth
                         @if (auth()->user()->role === 'admin' || auth()->user()->role === 'super_admin')
                             <li class="side-notifications" style="position: relative;">
@@ -681,7 +715,7 @@
                         </a>
                     </li>
                     <li class="side-menu">
-                        <a href="#">
+                        <a href="#" id="cart-link">
                             <i class="fa fa-shopping-cart"></i>
                             <span class="badge bg-success" id="cart-count">0</span>
                         </a>
@@ -703,6 +737,33 @@
             </li>
         </div>
         <!-- End Panier -->
+
+        <!-- Panneau Notifications (ouvre depuis la droite comme Moi / Panier) -->
+        <div class="side" id="side-notifications">
+            <a href="#" class="close-side"><i class="fa fa-times"></i></a>
+            <div class="cart-box">
+                <ul class="cart-list list-unstyled p-3">
+                    <li class="mb-2">
+                        <h5 class="text-success mb-0"><i class="fa fa-bell me-2"></i> Notifications</h5>
+                    </li>
+                    <li>
+                        <hr>
+                    </li>
+                    <li id="notif-list" style="max-height:70vh; overflow:auto;"></li>
+                    <li>
+                        <hr>
+                    </li>
+                    <li class="text-center"><a href="#" id="mark-all-read">Marquer tout lu</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Toast container pour notifications -->
+        <div id="toast-container" class="position-fixed bottom-0 end-0 p-3"
+            style="z-index:10800; pointer-events: none;"></div>
+
+        <!-- Overlay global pour fermer les panneaux latéraux -->
+        <div class="side-overlay" id="side-overlay"></div>
 
         <!-- Panneau "Moi" -->
         <div class="side" id="side-moi">
@@ -890,15 +951,55 @@
                     });
                 }
 
+                // Gestionnaire pour le panneau "Notifications"
+                const btnNotifications = document.getElementById('nav-notifications');
+                const sideNotifications = document.getElementById('side-notifications');
+                const closeSideNotifications = sideNotifications ? sideNotifications.querySelector('.close-side') :
+                null;
+
+                if (btnNotifications) {
+                    btnNotifications.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        debug('click notifications');
+                        // Fermer les autres panneaux
+                        if (sideCart) sideCart.classList.remove('on');
+                        if (sideMoi) sideMoi.classList.remove('on');
+                        if (sideNotifications) sideNotifications.classList.add('on');
+                        // show overlay and lock body scroll
+                        document.getElementById('side-overlay').classList.add('show');
+                        document.body.classList.add('side-open');
+                    }, true);
+                } else {
+                    debug('btnNotifications non trouvé');
+                }
+
+                if (closeSideNotifications) {
+                    closeSideNotifications.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        debug('close sideNotifications');
+                        if (sideNotifications) sideNotifications.classList.remove('on');
+                        document.getElementById('side-overlay').classList.remove('show');
+                        document.body.classList.remove('side-open');
+                    });
+                }
+
                 // Gestionnaire pour le panneau "Panier"
+
                 if (btnCart) {
                     btnCart.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
                         debug('click btnCart', btnCart);
-                        if (sideMoi) sideMoi.classList.remove('on'); // Ferme le panneau Moi si ouvert
+                        // Fermer les autres panneaux
+                        if (sideMoi) sideMoi.classList.remove('on');
+                        if (sideNotifications) sideNotifications.classList.remove('on');
                         if (sideCart) sideCart.classList.add('on');
-                    });
+                        // show overlay and lock body scroll
+                        document.getElementById('side-overlay').classList.add('show');
+                        document.body.classList.add('side-open');
+                    }, true);
                 } else {
                     debug('btnCart non trouvé');
                 }
@@ -909,6 +1010,22 @@
                         e.stopPropagation();
                         debug('close sideCart');
                         if (sideCart) sideCart.classList.remove('on');
+                        document.getElementById('side-overlay').classList.remove('show');
+                        document.body.classList.remove('side-open');
+                    });
+                }
+
+                // Click overlay to close all panels
+                const sideOverlay = document.getElementById('side-overlay');
+                if (sideOverlay) {
+                    sideOverlay.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        debug('overlay click - close all panels');
+                        if (sideCart) sideCart.classList.remove('on');
+                        if (sideMoi) sideMoi.classList.remove('on');
+                        if (sideNotifications) sideNotifications.classList.remove('on');
+                        sideOverlay.classList.remove('show');
+                        document.body.classList.remove('side-open');
                     });
                 }
             });
@@ -1133,6 +1250,33 @@
     }
 
     #side-moi .close-side {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 18px;
+        color: #333;
+        cursor: pointer;
+    }
+
+    /* Panneau Notifications (même comportement que side-cart / side-moi) */
+    #side-notifications {
+        position: fixed;
+        top: 0;
+        right: -350px;
+        width: 350px;
+        height: 100%;
+        background: #fff;
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+        transition: right 0.4s ease;
+        z-index: 10002;
+        overflow-y: auto;
+    }
+
+    #side-notifications.on {
+        right: 0;
+    }
+
+    #side-notifications .close-side {
         position: absolute;
         top: 15px;
         right: 15px;
