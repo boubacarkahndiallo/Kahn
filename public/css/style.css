@@ -44,6 +44,7 @@ body {
    This override targets >=992px and also ensures scrolled/display variants keep size.
    ------------------------------------------------------------------------ */
 @media (min-width: 992px) {
+
     nav.navbar .navbar-brand img.logo,
     nav.navbar .navbar-brand .logo,
     nav.navbar .logo-display img,
@@ -63,6 +64,419 @@ body {
         min-width: 0 !important;
     }
 }
+
+/* --------------------------------------------------------------------------
+   Phone input & intl-tel-input visual polish
+   - Aligns the flag inside the input-group .input-group-text
+   - Keeps inputs and flag vertically centered and consistent with Bootstrap
+   - Responsive adjustments for small screens
+   - focus/hover visual treatment and improved look
+   ------------------------------------------------------------------------ */
+.input-group .phone-flag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .375rem .5rem;
+    min-width: 56px;
+    background: #ffffff;
+    /* match input background for a clean look */
+    border-right: 0 !important;
+    border-top-left-radius: .375rem;
+    border-bottom-left-radius: .375rem;
+    border: 1px solid #ced4da;
+}
+
+.input-group .form-control {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group .iti-in-input-group {
+    display: inline-flex !important;
+    align-items: center;
+    height: 100% !important;
+    margin: 0 !important;
+}
+
+.input-group .iti__selected-flag {
+    width: 26px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+}
+
+/* Make sure the flag sprite is fully visible and not cropped */
+.input-group .iti__selected-flag {
+    background-size: contain !important;
+    background-position: center center !important;
+    display: inline-block !important;
+    box-sizing: content-box !important;
+}
+
+.input-group .iti__flag-container {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.input-group .phone-flag .iti {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+}
+
+/* Allow the flag to overflow the phone-flag slot if needed (some flags are larger) */
+.input-group .phone-flag {
+    overflow: visible !important;
+    z-index: 2;
+    /* bring flag above nearby elements that might clip it */
+}
+
+.input-group .phone-flag .iti {
+    overflow: visible !important;
+}
+
+.input-group .phone-flag .iti__selected-flag {
+    margin: 0 !important;
+    padding: 0 !important;
+    /* If the flag is an image, make it fit; if a CSS sprite, keep background-size contain
+       This covers both plugin rendering approaches. */
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    background-position: center center !important;
+    display: inline-block !important;
+}
+
+/* Ensure the selected flag uses an appropriate size that matches the input height */
+.input-group .iti-in-input-group .iti__selected-flag {
+    height: calc(1.2rem + .6rem) !important;
+    /* roughly match form-control height */
+    width: auto !important;
+}
+
+/* Small screens: reduce the flag width so it doesn't take too much space */
+@media (max-width: 575.98px) {
+    .input-group .phone-flag {
+        min-width: 44px;
+        padding: .25rem .4rem;
+    }
+
+    .input-group .iti__selected-flag {
+        width: 20px !important;
+        height: 14px !important;
+    }
+}
+
+/* Visual highlight when input receives focus so the UI appears unified */
+.input-group:focus-within .phone-flag {
+    border-color: #86b7ff;
+    box-shadow: 0 0 0 .15rem rgba(13, 110, 253, .15);
+}
+
+.phone-flag.focused {
+    border-color: #86b7ff !important;
+    box-shadow: 0 0 0 .12rem rgba(13, 110, 253, .08) !important;
+}
+
+/* Keep the dropdown list visually constrained to avoid layout jump */
+.iti__country-list {
+    max-height: 280px !important;
+}
+
+/* Ensure the flag wrapper doesn't hide or overflow the country list trigger */
+.input-group .iti {
+    position: static !important;
+}
+
+/* Hide the separate dial-code when the flag is rendered inside the input-group
+   so we keep a compact, professional appearance. Developers can remove this
+   rule if they want the country code displayed next to the flag. */
+.input-group .iti-in-input-group .iti__selected-dial-code {
+    display: none !important;
+}
+
+/* ------------------------------------------------------------------
+   Page Produits - Améliorations visuelles pour la page allproduit
+   ------------------------------------------------------------------ */
+.products-header {
+    background: #ffffff;
+    border-left: 5px solid #1c911e;
+    padding: 18px;
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(16, 24, 32, 0.06);
+}
+
+.products-header h2 {
+    color: #1c911e;
+    margin: 0;
+    font-size: 20px;
+}
+
+.product-count {
+    font-size: 0.9rem;
+    color: #6a6a6a;
+    margin-left: 8px;
+}
+
+.filter-bar label {
+    color: #1c911e;
+    font-weight: 600;
+    font-size: 0.86rem;
+}
+
+.filter-bar .form-control,
+.filter-bar .form-select {
+    min-width: 180px;
+    border-color: #1c911e;
+}
+
+.product-table thead th {
+    background: rgba(28, 145, 30, .04);
+    /* subtle highlight */
+    color: #1c1c1c;
+    font-weight: 700;
+}
+
+.product-table tbody tr:hover {
+    background: rgba(28, 145, 30, .03);
+}
+
+.product-thumbnail {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: inline-block;
+}
+
+.qty {
+    width: 80px;
+}
+
+.table-main .btn-annuler {
+    padding: 6px 10px;
+    border-radius: 6px;
+    line-height: 1;
+    font-size: 14px;
+}
+
+/* 'Commander' button style variants */
+.btn-commander:disabled,
+.btn-commander.btn-disabled {
+    background: #8fc89d !important;
+    /* lighter green */
+    color: #fff !important;
+    cursor: not-allowed;
+    opacity: .7;
+    box-shadow: none !important;
+}
+
+.btn-commander {
+    background: #1c911e !important;
+    border-radius: 6px;
+    padding: .6rem 1.1rem;
+    box-shadow: 0 8px 24px rgba(28, 145, 30, .12);
+}
+
+/* Pulse button helper (visual emphasis) */
+.btn-pulse {
+    position: relative;
+    transition: transform .12s ease-in-out;
+}
+
+.btn-pulse:hover {
+    transform: translateY(-1px);
+}
+
+@keyframes pulse-outline {
+    0% {
+        box-shadow: 0 0 0 0 rgba(28, 145, 30, 0.28);
+    }
+
+    70% {
+        box-shadow: 0 0 0 14px rgba(28, 145, 30, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(28, 145, 30, 0);
+    }
+}
+
+.btn-pulse.pulsing {
+    animation: pulse-outline 2s infinite;
+}
+
+/* Modal facture improvements */
+.modal-content .modal-header {
+    background: #1c911e !important;
+    color: #fff !important;
+}
+
+.modal-content .modal-body {
+    font-size: .95rem
+}
+
+/* Responsive smaller screens */
+@media (max-width: 767.98px) {
+    .filter-bar {
+        gap: .5rem !important;
+    }
+
+    .products-header {
+        padding: 12px;
+    }
+
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        min-width: 140px;
+    }
+
+    .qty {
+        width: 64px;
+    }
+}
+
+/* Align controls horizontally on smaller devices, label above control */
+@media (max-width: 575.98px) {
+    .filter-bar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
+    }
+
+    .filter-bar>div {
+        flex: 0 0 auto;
+        min-width: 120px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .filter-bar label {
+        display: block;
+        text-align: center;
+        width: 100%;
+    }
+
+    .filter-bar .form-control,
+    .filter-bar .form-select {
+        min-width: 120px;
+        max-width: 220px;
+    }
+
+    .filter-bar .btn-group {
+        justify-content: center;
+    }
+}
+
+/* Grid view styles */
+.product-grid {
+    margin-top: 10px;
+}
+
+.product-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Animation / fade helpers */
+.fade {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .32s ease-in-out, transform .32s ease-in-out;
+}
+
+.fade.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Make cards more compact on medium and large screens and responsive */
+.product-grid .col-12 {
+    padding-left: .5rem;
+    padding-right: .5rem;
+}
+
+@media (min-width: 768px) {
+    .product-grid .col-md-4 {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+}
+
+@media (min-width: 992px) {
+    .product-grid .col-lg-3 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+}
+
+/* Hover elevation */
+.product-card:hover {
+    box-shadow: 0 8px 24px rgba(16, 24, 32, .08);
+    transform: translateY(-3px);
+    transition: box-shadow .18s, transform .18s;
+}
+
+.product-card .form-check-input {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-right: 8px;
+}
+
+.product-card .grid-cancel {
+    padding: 6px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    font-size: 14px;
+}
+
+.product-card .product-thumbnail {
+    width: 72px;
+    height: 72px;
+}
+
+.product-card .product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.product-card .product-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.product-card .product-name {
+    font-weight: 600;
+}
+
+.product-card .product-price {
+    color: #1c911e;
+    font-weight: 700;
+}
+
+@media (max-width: 575.98px) {
+    .product-card {
+        padding: 10px;
+    }
+
+    .product-card .product-thumbnail {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+
 
 /* Avatar */
 .cart-user {
@@ -292,6 +706,23 @@ p {
     text-decoration: none;
     transition: opacity 0.2s ease-out;
     font-size: 28px;
+}
+
+.filter-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+}
+
+.filter-bar>div {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.filter-bar .form-control,
+.filter-bar .form-select {
+    min-width: 140px;
 }
 
 /*------------------------------------------------------------------ HEADER -------------------------------------------------------------------*/
@@ -3312,17 +3743,29 @@ ul.cart-list>li.total>.btn:hover {
    screens (they show after a tap). Remove them with a media query for
    devices that do not support hover or have coarse pointers.
    ------------------------------------------------------------------------ */
-@media (hover: none), (pointer: coarse), (max-width: 768px) {
+@media (hover: none),
+(pointer: coarse),
+(max-width: 768px) {
+
     /* general cases */
-    .nav-link::after, .nav-link::before,
-    .navbar a::after, .navbar a::before,
-    .navbar-brand::after, .navbar-brand::before,
-    .hvr-hover::after, .hvr-hover::before,
-    .service-block-inner::after, .service-block-inner::before,
-    .service-icon a::after, .service-icon a::before,
-    .footer-link ul li a::before, .footer-link ul li a::after,
-    .category-card::after, .category-overlay::after,
-    .category-card::before, .category-overlay::before {
+    .nav-link::after,
+    .nav-link::before,
+    .navbar a::after,
+    .navbar a::before,
+    .navbar-brand::after,
+    .navbar-brand::before,
+    .hvr-hover::after,
+    .hvr-hover::before,
+    .service-block-inner::after,
+    .service-block-inner::before,
+    .service-icon a::after,
+    .service-icon a::before,
+    .footer-link ul li a::before,
+    .footer-link ul li a::after,
+    .category-card::after,
+    .category-overlay::after,
+    .category-card::before,
+    .category-overlay::before {
         display: none !important;
         opacity: 0 !important;
         transform: none !important;
@@ -3334,7 +3777,11 @@ ul.cart-list>li.total>.btn:hover {
     }
 
     /* Also prevent hover transforms on the elements themselves */
-    .hvr-hover, .nav-link, .navbar a, .service-block-inner, .service-icon a {
+    .hvr-hover,
+    .nav-link,
+    .navbar a,
+    .service-block-inner,
+    .service-icon a {
         -webkit-transform: none !important;
         transform: none !important;
         -webkit-transition: none !important;

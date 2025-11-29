@@ -50,10 +50,18 @@
         .btn-cta-commande.pulsing {
             animation: pulse-cta 2.5s infinite;
         }
+
         /* Blink animation used specifically for CTA in the slider */
         @keyframes blink-cta {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.45; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.45;
+            }
         }
 
         /* Apply blink animation only for the CTA within the slider */
@@ -182,11 +190,11 @@
             }
 
             .cover-slides h1,
-                .cover-slides p,
-                .slide-in-left,
-                .delay-1,
-                .delay-2,
-                .delay-3 {
+            .cover-slides p,
+            .slide-in-left,
+            .delay-1,
+            .delay-2,
+            .delay-3 {
                 opacity: 1 !important;
                 transform: none !important;
                 filter: none !important;
@@ -195,28 +203,44 @@
             }
 
             /* Mobile-specific adjustments for slider heading and CTA */
-            .cover-slides h1 { font-size: 1.6rem !important; line-height: 1.1 !important; margin: .25rem 0 !important; }
-            .cover-slides .m-b-20 { margin-bottom: .35rem !important; }
-            .cover-slides p { margin-top: .5rem !important; }
+            .cover-slides h1 {
+                font-size: 1.6rem !important;
+                line-height: 1.1 !important;
+                margin: .25rem 0 !important;
+            }
+
+            .cover-slides .m-b-20 {
+                margin-bottom: .35rem !important;
+            }
+
+            .cover-slides p {
+                margin-top: .5rem !important;
+            }
+
             /* Ensure CTA is visible and blinking on mobile */
-            .cover-slides .btn-cta-commande.pulsing { animation: blink-cta 1.2s ease-in-out infinite !important; }
-            .cover-slides .btn-cta-commande { pointer-events: auto !important; }
+            .cover-slides .btn-cta-commande.pulsing {
+                animation: blink-cta 1.2s ease-in-out infinite !important;
+            }
 
-                /* Remove any animation on slide-in elements to make text and CTA fully static */
-                .cover-slides .slide-in-left,
-                .cover-slides .delay-1,
-                .cover-slides .delay-2,
-                .cover-slides .delay-3,
-                .cover-slides h1.slide-in-left,
-                .cover-slides p.slide-in-left {
-                    transform: none !important;
-                    opacity: 1 !important;
-                    animation: none !important;
-                    transition: none !important;
-                }
+            .cover-slides .btn-cta-commande {
+                pointer-events: auto !important;
+            }
 
-                /* Keep CTA pulsing on mobile (we want it to blink) */
-                /* nothing to override here */
+            /* Remove any animation on slide-in elements to make text and CTA fully static */
+            .cover-slides .slide-in-left,
+            .cover-slides .delay-1,
+            .cover-slides .delay-2,
+            .cover-slides .delay-3,
+            .cover-slides h1.slide-in-left,
+            .cover-slides p.slide-in-left {
+                transform: none !important;
+                opacity: 1 !important;
+                animation: none !important;
+                transition: none !important;
+            }
+
+            /* Keep CTA pulsing on mobile (we want it to blink) */
+            /* nothing to override here */
 
             .slides-container li .overlay-background {
                 z-index: 1 !important;
@@ -232,7 +256,121 @@
 
         /* Respect user preference: reduce motion */
         @media (prefers-reduced-motion: reduce) {
-            .btn-cta-commande.pulsing, .btn-cta-commande i { animation: none !important; }
+
+            .btn-cta-commande.pulsing,
+            .btn-cta-commande i {
+                animation: none !important;
+            }
+        }
+
+        /* ===== CTA FINAL (customized) ===== */
+        .cta-final {
+            position: relative;
+            background-attachment: fixed;
+            background-position: center center;
+            background-size: cover;
+            padding: 70px 0;
+            color: #fff;
+        }
+
+        .cta-final .cta-overlay {
+            background: linear-gradient(180deg, rgba(20, 130, 20, 0.7), rgba(20, 110, 20, 0.65));
+            padding: 48px 28px;
+            border-radius: 12px;
+            display: inline-block;
+            max-width: 1040px;
+            width: 100%;
+            box-shadow: 0 12px 32px rgba(16, 86, 19, 0.2);
+            backdrop-filter: saturate(140%) blur(3px);
+        }
+
+        .cta-final h2 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .cta-final p.lead {
+            font-size: 1.05rem;
+            opacity: 0.95;
+            margin-bottom: 1.2rem;
+            color: #dfeee0;
+        }
+
+        /* CTA primary: `.btn-cta-final`: large and accessible */
+        .btn-cta-final {
+            background: linear-gradient(135deg, #1eb24b 0%, #12912b 100%) !important;
+            color: #fff !important;
+            border: 0 !important;
+            padding: 14px 30px !important;
+            font-size: 18px !important;
+            font-weight: 800 !important;
+            border-radius: 999px !important;
+            box-shadow: 0 10px 26px rgba(25, 100, 30, 0.28), 0 4px 12px rgba(25, 100, 30, 0.12) !important;
+            transition: transform .18s cubic-bezier(.2, .9, .2, 1), box-shadow .18s ease !important;
+            outline: none !important;
+            text-transform: uppercase !important;
+        }
+
+        .btn-cta-final:hover,
+        .btn-cta-final:focus {
+            transform: translateY(-4px) scale(1.02) !important;
+            box-shadow: 0 18px 42px rgba(25, 100, 30, 0.32) !important;
+        }
+
+        /* keep the CTA clearly visible on mobile */
+        @media (max-width: 576px) {
+            .cta-final {
+                padding: 36px 0;
+            }
+
+            .cta-final h2 {
+                font-size: 1.25rem;
+            }
+
+            .cta-final p.lead {
+                font-size: 0.95rem;
+            }
+
+            .cta-final .cta-overlay {
+                padding: 26px 18px;
+            }
+
+            .btn-cta-final {
+                width: 100% !important;
+                padding: 12px 18px !important;
+                font-size: 16px !important;
+            }
+        }
+
+        /* Accessibility focus ring */
+        .btn-cta-final:focus {
+            box-shadow: 0 0 0 4px rgba(34, 140, 50, 0.2), 0 16px 36px rgba(20, 90, 30, 0.2) !important;
+            outline: none !important;
+        }
+
+        /* Subtle pulsation for CTA (not forced on reduced-motion) */
+        @keyframes cta-pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 10px 26px rgba(25, 100, 30, 0.28);
+            }
+
+            50% {
+                transform: scale(1.01);
+                box-shadow: 0 18px 34px rgba(25, 100, 30, 0.32);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 10px 26px rgba(25, 100, 30, 0.28);
+            }
+        }
+
+        .btn-cta-final.pulsing {
+            animation: cta-pulse 2.4s infinite ease-in-out;
         }
     </style>
 
@@ -406,11 +544,12 @@
     <!-- CTA final with background image and green overlay -->
     <section class="cta-final reveal" data-delay="100"
         style="background-image: url('{{ asset('images/banner-06.jpg') }}'); position:relative;">
-        <div class="cta-overlay text-center">
+        <div class="cta-overlay text-center" role="region" aria-label="Appel à l'action - commander maintenant">
             <div class="container">
                 <h2 class="fw-bold">Commandez maintenant et profitez de la fraîcheur</h2>
                 <p class="lead">Promotion spéciale pour les premières commandes.</p>
-                <a href="{{ route('produits.allproduit') }}" class="btn-cta btn-lg">Découvrir</a>
+                <a href="{{ route('produits.allproduit') }}" id="cta-discover" class="btn-cta btn-lg btn-cta-final"
+                    role="button" aria-label="Découvrir nos produits">Découvrir</a>
             </div>
         </div>
     </section>
@@ -482,6 +621,30 @@
             });
         </script>
     @endpush
+
+    <script>
+        // Enhance CTA interaction: small animation on click and optional analytics push
+        document.addEventListener('DOMContentLoaded', function() {
+            const cta = document.getElementById('cta-discover');
+            if (!cta) return;
+            // Add pulsing by default, but respect reduced-motion
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                cta.classList.add('pulsing');
+            }
+            cta.addEventListener('click', function() {
+                // Visual micro-feedback
+                cta.classList.add('clicked');
+                setTimeout(() => cta.classList.remove('clicked'), 260);
+                // Simple analytics event (if available)
+                if (typeof window.dataLayer !== 'undefined' && window.dataLayer.push) {
+                    window.dataLayer.push({
+                        event: 'cta_click',
+                        label: 'cta-discover-home'
+                    });
+                }
+            });
+        });
+    </script>
 
     <!-- Modal Ajouter au Panier -->
     <!-- Modal Livraison Rapide -->

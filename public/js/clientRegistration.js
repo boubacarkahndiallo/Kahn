@@ -139,9 +139,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateCommanderButton() {
         if (btnCommander) {
             if (isClientLoggedIn()) {
-                btnCommander.classList.remove('d-none');
+                btnCommander.disabled = false;
+                btnCommander.classList.add('pulsing');
             } else {
-                btnCommander.classList.add('d-none');
+                btnCommander.disabled = true;
+                btnCommander.classList.remove('pulsing');
             }
         }
     }

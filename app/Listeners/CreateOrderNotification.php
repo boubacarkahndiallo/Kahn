@@ -39,26 +39,9 @@ class CreateOrderNotification implements ShouldQueue
             'date_commande' => $commande->date_commande?->toIso8601String(),
         ];
 
-        // Créer une notification pour chaque admin
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'type' => 'order',
-                'title' => $title,
-                'message' => $message,
-                'data' => $data,
-            ]);
-        }
-
-        // Créer une notification pour le client (confirmation pour le client lui-même)
-        if ($client) {
-            Notification::create([
-                'user_id' => $client->id,
-                'type' => 'order',
-                'title' => 'Votre commande a été reçue',
-                'message' => 'Votre commande ' . $commande->numero_commande . ' a bien été enregistrée. Nous vous contacterons sous peu.',
-                'data' => $data,
-            ]);
-        }
+        // NOTE: The controller now creates DB notifications synchronously so users
+        // can see them immediately. This listener is kept as a queued handler for
+        // any side-effects required (emails, logs). We'll log the event here.
+        logger()->info('CreateOrderNotification processed for commande id: ' . $commande->id);
     }
 }

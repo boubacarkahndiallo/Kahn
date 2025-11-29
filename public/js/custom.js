@@ -19,10 +19,14 @@
 	$(window).on('scroll', function () {
 		if ($(window).scrollTop() > 50) {
 			$('.main-header').addClass('fixed-menu');
+			$('body').addClass('header-fixed-active');
 		} else {
 			$('.main-header').removeClass('fixed-menu');
+			$('body').removeClass('header-fixed-active');
 		}
 	});
+	// Run once to set initial fixed-header state if page is scrolled
+	$(window).trigger('scroll');
 
 	/* ..............................................
 	   Gallery

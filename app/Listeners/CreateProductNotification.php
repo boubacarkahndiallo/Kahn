@@ -27,28 +27,10 @@ class CreateProductNotification implements ShouldQueue
             'image' => $produit->image,
         ];
 
-        // Notifier tous les clients
-        $clients = User::where('role', 'client')->get();
-        foreach ($clients as $client) {
-            Notification::create([
-                'user_id' => $client->id,
-                'type' => 'product',
-                'title' => $title,
-                'message' => $message,
-                'data' => $data,
-            ]);
-        }
-
-        // Notifier les admins aussi
-        $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'type' => 'product',
-                'title' => $title,
-                'message' => $message,
-                'data' => $data,
-            ]);
-        }
+        // NOTE: Notifications are created synchronously by the controller on create so
+        // that they are immediately available to users. This listener is kept for
+        // additional side-effects (email, logs, third-party integrations) if needed.
+        // For now, we simply log the creation.
+        logger()->info('CreateProductNotification handled for product id: ' . $produit->id);
     }
 }

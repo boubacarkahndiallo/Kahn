@@ -37,10 +37,11 @@ function disableProductSelections(tableElement) {
         grandTotal.textContent = '0';
     }
 
-    // Cacher le bouton commander
+    // Désactiver (ne pas cacher) le bouton commander pour une meilleure UX
     const btnCommander = document.getElementById('btn-commander');
     if (btnCommander) {
-        btnCommander.classList.add('d-none');
+        btnCommander.disabled = true;
+        btnCommander.classList.remove('pulsing');
     }
 }
 

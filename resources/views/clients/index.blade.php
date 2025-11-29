@@ -82,9 +82,11 @@
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold" for="tel">Téléphone</label>
                                     <div class="input-group">
-                                        <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                        <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                            tabindex="0" aria-label="Changer le pays"></span>
                                         <input type="tel" class="form-control phone-input" id="tel" name="tel"
-                                            required value="{{ old('tel') }}" aria-describedby="telFeedback">
+                                            required value="{{ old('tel') }}" aria-describedby="telFeedback"
+                                            inputmode="tel" autocomplete="tel">
                                     </div>
                                     <input type="hidden" id="tel_e164" name="tel_e164" value="{{ old('tel_e164') }}">
                                     <input type="hidden" id="tel_country" name="tel_country"
@@ -99,10 +101,11 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" for="whatsapp">WhatsApp</label>
                                 <div class="input-group">
-                                    <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                    <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                        tabindex="0" aria-label="Changer le pays"></span>
                                     <input type="tel" class="form-control phone-input" id="whatsapp"
-                                        name="whatsapp" value="{{ old('whatsapp') }}"
-                                        aria-describedby="whatsappFeedback">
+                                        name="whatsapp" value="{{ old('whatsapp') }}" aria-describedby="whatsappFeedback"
+                                        inputmode="tel" autocomplete="tel">
                                 </div>
                                 <input type="hidden" id="whatsapp_e164" name="whatsapp_e164"
                                     value="{{ old('whatsapp_e164') }}">

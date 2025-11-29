@@ -1134,25 +1134,33 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="tel">Téléphone</label>
                             <div class="input-group">
-                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                    tabindex="0" aria-label="Changer le pays"></span>
                                 <input type="tel" class="form-control" id="tel" name="tel" required
-                                    autocomplete="tel" aria-describedby="telFeedback_navbar"
+                                    inputmode="tel" autocomplete="tel" aria-describedby="telFeedback_navbar"
                                     value="{{ old('tel') }}">
                                 <input type="hidden" name="tel_e164" id="tel_e164" value="{{ old('tel_e164') }}">
-                                <input type="hidden" name="tel_country" id="tel_country" value="{{ old('tel_country') }}">
-                                <input type="hidden" name="tel_dialcode" id="tel_dialcode" value="{{ old('tel_dialcode') }}">
+                                <input type="hidden" name="tel_country" id="tel_country"
+                                    value="{{ old('tel_country') }}">
+                                <input type="hidden" name="tel_dialcode" id="tel_dialcode"
+                                    value="{{ old('tel_dialcode') }}">
                                 <div class="invalid-feedback" id="telFeedback_navbar"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="whatsapp">WhatsApp</label>
                             <div class="input-group">
-                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                    tabindex="0" aria-label="Changer le pays"></span>
                                 <input type="tel" class="form-control" name="whatsapp" id="whatsapp"
-                                    aria-describedby="whatsappFeedback_navbar" value="{{ old('whatsapp') }}">
-                                <input type="hidden" name="whatsapp_e164" id="whatsapp_e164" value="{{ old('whatsapp_e164') }}">
-                                <input type="hidden" name="whatsapp_country" id="whatsapp_country" value="{{ old('whatsapp_country') }}">
-                                <input type="hidden" name="whatsapp_dialcode" id="whatsapp_dialcode" value="{{ old('whatsapp_dialcode') }}">
+                                    inputmode="tel" autocomplete="tel" aria-describedby="whatsappFeedback_navbar"
+                                    value="{{ old('whatsapp') }}">
+                                <input type="hidden" name="whatsapp_e164" id="whatsapp_e164"
+                                    value="{{ old('whatsapp_e164') }}">
+                                <input type="hidden" name="whatsapp_country" id="whatsapp_country"
+                                    value="{{ old('whatsapp_country') }}">
+                                <input type="hidden" name="whatsapp_dialcode" id="whatsapp_dialcode"
+                                    value="{{ old('whatsapp_dialcode') }}">
                                 <div class="invalid-feedback" id="whatsappFeedback_navbar"></div>
                             </div>
                         </div>

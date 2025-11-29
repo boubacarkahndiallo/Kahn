@@ -63,10 +63,11 @@
                         <div class="col-md-6">
                             <label for="profileTel" class="form-label">Téléphone</label>
                             <div class="input-group">
-                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                    tabindex="0" aria-label="Changer le pays"></span>
                                 <input type="tel" class="form-control form-control" id="profileTel" name="tel"
-                                    value="{{ auth()->user()->tel ?? '' }}" placeholder="+224 ..."
-                                    aria-describedby="profileTelFeedback">
+                                    value="{{ auth()->user()->tel ?? '' }}" placeholder="+224 ..." inputmode="tel"
+                                    autocomplete="tel" aria-describedby="profileTelFeedback">
                             </div>
                             <div class="invalid-feedback d-none" id="profileTelFeedback">Numéro invalide</div>
                             <small class="text-danger d-none" id="error-tel"></small>
@@ -75,10 +76,12 @@
                         <div class="col-md-6">
                             <label for="profileWhatsapp" class="form-label">WhatsApp</label>
                             <div class="input-group">
-                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                    tabindex="0" aria-label="Changer le pays"></span>
                                 <input type="tel" class="form-control form-control" id="profileWhatsapp"
                                     name="whatsapp" value="{{ auth()->user()->whatsapp ?? '' }}"
-                                    placeholder="+224 ..." aria-describedby="profileWhatsappFeedback">
+                                    placeholder="+224 ..." inputmode="tel" autocomplete="tel"
+                                    aria-describedby="profileWhatsappFeedback">
                             </div>
                             <div class="invalid-feedback d-none" id="profileWhatsappFeedback">Numéro WhatsApp invalide
                             </div>

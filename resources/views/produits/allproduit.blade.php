@@ -18,52 +18,33 @@
     </div>
 
     <div class="container my-5">
-        <style>
-            /* Style local pour mettre en valeur le bouton commander sans toucher la logique */
-            .btn-pulse {
-                position: relative;
-                transition: transform .12s ease-in-out;
-                box-shadow: 0 6px 18px rgba(28, 145, 30, 0.12);
-                border: none;
-            }
-
-            .btn-pulse:hover {
-                transform: translateY(-2px);
-            }
-
-            @keyframes pulse-outline {
-                0% {
-                    box-shadow: 0 0 0 0 rgba(28, 145, 30, 0.28);
-                }
-
-                70% {
-                    box-shadow: 0 0 0 14px rgba(28, 145, 30, 0);
-                }
-
-                100% {
-                    box-shadow: 0 0 0 0 rgba(28, 145, 30, 0);
-                }
-            }
-
-            .btn-pulse.pulsing {
-                animation: pulse-outline 2s infinite;
-            }
-        </style>
 
         <!-- Header + Filtre/Recherche -->
-        <div class="row align-items-center mb-4 p-3 rounded shadow-sm"
-            style="background:white; border-left:5px solid #1c911e;">
-            <div class="col-md-4 d-flex align-items-center gap-2">
-                <i class="fa fa-shopping-cart fa-2x" style="color:#1c911e;"></i>
-                <h2 class="mb-0 fw-bold" style="color:#1c911e;">Cochez les produits à commander</h2>
+        <div class="row align-items-center mb-4 p-3 products-header">
+            <div class="col-md-4 col-12 d-flex align-items-center gap-2">
+                <i class="fa fa-shopping-cart fa-2x text-success" style="color:#1c911e;"></i>
+                <div>
+                    <h2 class="mb-0 fw-bold">Cochez les produits à commander</h2>
+                    <small class="product-count">{{ $produits->count() }} produits disponibles</small>
+                </div>
             </div>
-            <div class="col-md-8 d-flex gap-3 justify-content-end flex-wrap">
+            <div class="col-md-8 col-12 d-flex gap-3 justify-content-end flex-wrap filter-bar">
+                <!-- Toggle vue (liste / grille) -->
+                <div class="d-flex flex-column toggle-area">
+                    <label class="form-label fw-semibold mb-1 d-block">Afficher : <small id="view-mode-label"
+                            class="text-muted ms-1">Liste</small></label>
+                    <div class="btn-group" role="group" aria-label="Afficher en liste ou grille">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="view-list" aria-pressed="true"><i
+                                class="fa fa-bars"></i></button>
+                        <button type="button" class="btn btn-outline-success btn-sm" id="view-grid" aria-pressed="false"><i
+                                class="fa fa-th-large"></i></button>
+                    </div>
+                </div>
                 <!-- Filtrer par catégorie -->
                 <div>
-                    <label for="categorie-filter" class="form-label fw-semibold mb-1 d-block"
-                        style="color:#1c911e;">Catégorie :</label>
+                    <label for="categorie-filter" class="form-label fw-semibold mb-1 d-block">Catégorie :</label>
                     <select id="categorie-filter" class="form-select form-select-sm shadow-sm"
-                        style="min-width:180px; border-color:#1c911e;">
+                        aria-label="Filtrer par catégorie">
                         <option value="">Toutes</option>
                         @foreach ($categories as $categorie)
                             <option value="{{ $categorie }}">{{ $categorie }}</option>
@@ -72,17 +53,17 @@
                 </div>
                 <!-- Recherche -->
                 <div>
-                    <label for="search-produit" class="form-label fw-semibold mb-1 d-block" style="color:#1c911e;">Recherche
+                    <label for="search-produit" class="form-label fw-semibold mb-1 d-block">Recherche
                         :</label>
                     <input type="text" id="search-produit" class="form-control form-control-sm shadow-sm"
-                        placeholder="Tapez pour rechercher..." style="min-width:220px; border-color:#1c911e;">
+                        placeholder="Tapez pour rechercher..." aria-label="Rechercher un produit">
                 </div>
             </div>
         </div>
 
         <!-- Description -->
         <div class="mb-4">
-            <div id="clientInfo" style="display: none;"></div>
+            <div id="clientInfo" class="d-none"></div>
 
             <form id="clientRegistrationForm" method="POST" action="{{ route('clients.store') }}">
                 @csrf
@@ -96,18 +77,22 @@
                     </div>
                     <div class="col-6 col-md-3 ">
                         <div class="input-group">
-                            <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                            <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                aria-label="Changer le pays" tabindex="0"></span>
                             <input type="tel" class="form-control" id="tel" name="tel" required
-                                placeholder="Téléphone" value="{{ old('tel') }}">
-                            <div class="invalid-feedback"></div>
+                                placeholder="Téléphone" value="{{ old('tel') }}" inputmode="tel" autocomplete="tel"
+                                aria-describedby="tel-feedback">
+                            <div class="invalid-feedback" id="tel-feedback"></div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="input-group">
-                            <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                            <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                aria-label="Changer le pays" tabindex="0"></span>
                             <input type="tel" class="form-control" name="whatsapp" id="whatsapp" placeholder="WhatsApp"
-                                value="{{ old('whatsapp') }}">
-                            <div class="invalid-feedback"></div>
+                                value="{{ old('whatsapp') }}" inputmode="tel" autocomplete="tel"
+                                aria-describedby="whatsapp-feedback">
+                            <div class="invalid-feedback" id="whatsapp-feedback"></div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
@@ -118,7 +103,7 @@
                     <input type="hidden" name="statut" value="actif">
                 </div>
                 <div class="mt-2 text-end">
-                    <button type="submit" class="btn" style="background:#1c911e; color:white;">
+                    <button type="submit" class="btn btn-success">
                         <i class="fa fa-save me-1"></i> Enregistrer
                     </button>
                 </div>
@@ -134,10 +119,10 @@
         @endpush
         <!-- Tableau Produits -->
         <div class="table-main table-responsive">
-            <table class="table align-middle w-100" id="produits-table">
+            <table class="table table-hover align-middle w-100 product-table" id="produits-table">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" id="select-all"></th>
+                        <th><input type="checkbox" id="select-all" aria-label="Tout sélectionner"></th>
                         <th>Produits</th>
                         <th>P.U</th>
                         <th>Quantités</th>
@@ -152,13 +137,19 @@
                             <td><input type="checkbox" class="select-produit"></td>
                             <td class="d-flex align-items-center gap-2">
                                 @if ($produit->image)
-                                    <img src="{{ Storage::url($produit->image) }}" width="60" height="60"
-                                        alt="{{ $produit->nom }}" style="border-radius:50%; object-fit:cover;">
+                                    <img src="{{ Storage::url($produit->image) }}" class="product-thumbnail"
+                                        alt="{{ $produit->nom }}">
                                 @else
                                     <img src="https://via.placeholder.com/60" alt="Pas d'image"
-                                        style="border-radius:50%; object-fit:cover;">
+                                        class="product-thumbnail">
                                 @endif
-                                <span>{{ $produit->nom }}</span>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold">{{ $produit->nom }}</span>
+                                    @if ($produit->categorie)
+                                        <span
+                                            class="badge bg-light text-success small mt-1">{{ $produit->categorie }}</span>
+                                    @endif
+                                </div>
                             </td>
                             <td>{{ number_format($produit->prix, 0, ',', ' ') }}</td>
                             <td>
@@ -174,13 +165,16 @@
             </table>
         </div>
 
+        <!-- Vue Grille (cards) - initialement masquée -->
+        <div id="products-grid" class="product-grid row g-3 d-none" aria-hidden="true"></div>
+
         <!-- Résumé total et bouton Commander -->
         <div class="d-flex justify-content-end align-items-center mt-3 gap-3">
             <div class="fw-bold fs-5">
-                Total : <span id="grand-total">0</span> GNF
+                Total : <span id="grand-total" aria-live="polite">0</span> GNF
             </div>
-            <button id="btn-commander" class="btn btn-success btn-lg d-none btn-pulse pulsing" title="Commandez"
-                aria-label="Cliquez pour confirmer et passer votre commande">
+            <button id="btn-commander" class="btn btn-success btn-lg btn-commander btn-pulse" title="Commandez"
+                aria-label="Cliquez pour confirmer et passer votre commande" disabled>
                 <i class="fa fa-check-circle me-2"></i>
                 Commandez
                 <span class="visually-hidden">. Confirmer la commande</span>
@@ -193,7 +187,7 @@
     <div class="modal fade" id="factureModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header" style="background:#1c911e;">
+                <div class="modal-header">
                     <h5 class="modal-title text-white"><i class="fa fa-file-invoice me-2"></i> Facture de commande</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -289,12 +283,11 @@
                     </div>
 
                     <div>
-                        <button type="button" class="btn" data-bs-dismiss="modal"
-                            style="background:#070a23; color:white;">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                             Fermer
                         </button>
-                        <button type="button" class="btn" id="btn-imprimer-facture"
-                            style="background:#1c911e; color:white;">
+                        <button type="button" class="btn btn-success" id="btn-imprimer-facture"
+                            aria-label="Imprimer la facture">
                             <i class="fa fa-print me-1"></i> Imprimer
                         </button>
                     </div>

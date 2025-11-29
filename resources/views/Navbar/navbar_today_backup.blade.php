@@ -1134,9 +1134,10 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="tel">Téléphone</label>
                             <div class="input-group">
-                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                    tabindex="0" aria-label="Changer le pays"></span>
                                 <input type="tel" class="form-control" id="tel" name="tel" required
-                                    autocomplete="tel" aria-describedby="telFeedback_navbar_backup"
+                                    inputmode="tel" autocomplete="tel" aria-describedby="telFeedback_navbar_backup"
                                     value="{{ old('tel') }}">
                                 <div class="invalid-feedback" id="telFeedback_navbar_backup"></div>
                             </div>
@@ -1144,8 +1145,10 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="whatsapp">WhatsApp</label>
                             <div class="input-group">
-                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                    tabindex="0" aria-label="Changer le pays"></span>
                                 <input type="tel" class="form-control" name="whatsapp" id="whatsapp"
+                                    inputmode="tel" autocomplete="tel"
                                     aria-describedby="whatsappFeedback_navbar_backup" value="{{ old('whatsapp') }}">
                                 <div class="invalid-feedback" id="whatsappFeedback_navbar_backup"></div>
                             </div>

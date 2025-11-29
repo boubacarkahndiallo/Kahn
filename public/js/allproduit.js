@@ -41,7 +41,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function toggleCommanderButton() {
         const anyChecked = Array.from(table.querySelectorAll('.select-produit')).some(chk => chk.checked);
-        btnCommander.classList.toggle('d-none', !anyChecked);
+        if (btnCommander) {
+            btnCommander.disabled = !anyChecked;
+            btnCommander.classList.toggle('pulsing', anyChecked);
+            btnCommander.classList.toggle('btn-disabled', !anyChecked);
+            btnCommander.setAttribute('aria-disabled', (!anyChecked).toString());
+        }
     }
 
     // Fonctions pour activer/désactiver les sélections (utilisables globalement)
@@ -67,7 +72,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (grandTotal) grandTotal.textContent = '0';
-        if (btnCommander) btnCommander.classList.add('d-none');
+        if (btnCommander) {
+            btnCommander.disabled = true;
+            btnCommander.classList.remove('pulsing');
+        }
     }
 
     function enableAllSelections() {
@@ -76,7 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         const selectAllEl = document.getElementById('select-all');
         if (selectAllEl) selectAllEl.disabled = false;
-        if (btnCommander) btnCommander.classList.remove('d-none');
+        if (btnCommander) btnCommander.disabled = false;
     }
 
     // Vérifier si l'utilisateur est connecté
@@ -130,6 +138,17 @@ document.addEventListener("DOMContentLoaded", function () {
             updateTotal(tr);
             updateGrandTotal();
             toggleCommanderButton();
+            // Sync grid card if exists
+            const id = tr.dataset.id;
+            const card = document.querySelector(`.product-card[data-id="${id}"]`);
+            if (card) {
+                const gridChk = card.querySelector('.grid-select');
+                if (gridChk) gridChk.checked = this.checked;
+                const gridQty = card.querySelector('.grid-qty');
+                if (gridQty) { gridQty.disabled = !this.checked; if (!this.checked) gridQty.value = 1; }
+                const gridCancel = card.querySelector('.grid-cancel');
+                if (gridCancel) { gridCancel.classList.toggle('d-none', !this.checked); }
+            }
         });
     });
 
@@ -140,6 +159,13 @@ document.addEventListener("DOMContentLoaded", function () {
             updateTotal(tr);
             updateGrandTotal();
             updateProduitsSelectionnes();
+            // sync grid qty if present
+            const id = tr.dataset.id;
+            const card = document.querySelector(`.product-card[data-id="${id}"]`);
+            if (card) {
+                const gridQty = card.querySelector('.grid-qty');
+                if (gridQty) gridQty.value = this.value;
+            }
         });
     });
 
@@ -156,6 +182,17 @@ document.addEventListener("DOMContentLoaded", function () {
             updateTotal(tr);
             updateGrandTotal();
             toggleCommanderButton();
+            // sync grid
+            const id = tr.dataset.id;
+            const card = document.querySelector(`.product-card[data-id="${id}"]`);
+            if (card) {
+                const gridChk = card.querySelector('.grid-select');
+                if (gridChk) gridChk.checked = false;
+                const gridQty = card.querySelector('.grid-qty');
+                if (gridQty) { gridQty.value = 1; gridQty.disabled = true; }
+                const gridCancel = card.querySelector('.grid-cancel');
+                if (gridCancel) gridCancel.classList.add('d-none');
+            }
         });
     });
 
@@ -174,6 +211,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Filtrage
     const filterCategorie = document.getElementById('categorie-filter');
     const searchInput = document.getElementById('search-produit');
+    const viewListBtn = document.getElementById('view-list');
+    const viewGridBtn = document.getElementById('view-grid');
+    const viewModeLabel = document.getElementById('view-mode-label');
+    const productsGrid = document.getElementById('products-grid');
 
     function applyFilters() {
         const catVal = filterCategorie.value.toLowerCase();
@@ -195,4 +236,165 @@ document.addEventListener("DOMContentLoaded", function () {
         filterCategorie.addEventListener('change', applyFilters);
         searchInput.addEventListener('input', applyFilters);
     }
+
+    // Build grid view from table rows
+    function createGridFromTable() {
+        if (!productsGrid) return;
+        productsGrid.innerHTML = '';
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(tr => {
+            if (tr.classList.contains('d-none')) return; // respect filters
+            const id = tr.dataset.id;
+            const prix = tr.dataset.prix;
+            const nom = tr.querySelector('td:nth-child(2) .fw-bold') ? tr.querySelector('td:nth-child(2) .fw-bold').textContent.trim() : (tr.querySelector('td:nth-child(2) span') ? tr.querySelector('td:nth-child(2) span').textContent.trim() : 'Produit');
+            const img = tr.querySelector('td:nth-child(2) img');
+            const imgSrc = img ? img.src : 'https://via.placeholder.com/72';
+            const checked = tr.querySelector('.select-produit').checked;
+            const qty = tr.querySelector('.qty').value;
+
+            const col = document.createElement('div');
+            col.className = 'col-12 col-sm-6 col-md-4';
+
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.dataset.id = id;
+
+            card.innerHTML = `
+                <input type="checkbox" class="form-check-input grid-select" aria-label="Sélectionner ${nom}" ${checked ? 'checked' : ''} />
+                <img src="${imgSrc}" alt="${nom}" class="product-thumbnail" />
+                <div class="product-info">
+                    <div class="product-name">${nom}</div>
+                    <div class="product-price">${new Intl.NumberFormat('fr-FR').format(prix)} GNF</div>
+                </div>
+                <div class="product-actions">
+                    <input type="number" class="form-control form-control-sm grid-qty" min="1" value="${qty}" style="width:80px;" ${checked ? '' : 'disabled'} />
+                    <button class="btn btn-danger btn-sm grid-cancel ${checked ? '' : 'd-none'}" title="Annuler">&times;</button>
+                </div>
+            `;
+
+            col.appendChild(card);
+            productsGrid.appendChild(col);
+        });
+
+        // Wire grid handlers to sync with table rows
+        productsGrid.querySelectorAll('.grid-select').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const card = this.closest('.product-card');
+                const id = card.dataset.id;
+                const tr = table.querySelector(`tbody tr[data-id="${id}"]`);
+                if (!tr) return;
+                const tableCheckbox = tr.querySelector('.select-produit');
+                tableCheckbox.checked = this.checked;
+                tableCheckbox.dispatchEvent(new Event('change'));
+                // enable/disable qty on grid
+                const gridQty = card.querySelector('.grid-qty');
+                const gridCancel = card.querySelector('.grid-cancel');
+                if (this.checked) {
+                    gridQty.disabled = false;
+                    gridCancel.classList.remove('d-none');
+                } else {
+                    gridQty.disabled = true;
+                    gridQty.value = 1;
+                    gridCancel.classList.add('d-none');
+                }
+            });
+        });
+
+        productsGrid.querySelectorAll('.grid-qty').forEach(input => {
+            input.addEventListener('input', function () {
+                const card = this.closest('.product-card');
+                const id = card.dataset.id;
+                const tr = table.querySelector(`tbody tr[data-id="${id}"]`);
+                if (!tr) return;
+                const tableQty = tr.querySelector('.qty');
+                tableQty.value = this.value;
+                tableQty.dispatchEvent(new Event('input'));
+            });
+        });
+
+        productsGrid.querySelectorAll('.grid-cancel').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const card = this.closest('.product-card');
+                const id = card.dataset.id;
+                const tr = table.querySelector(`tbody tr[data-id="${id}"]`);
+                if (!tr) return;
+                const tableCheckbox = tr.querySelector('.select-produit');
+                tableCheckbox.checked = false;
+                tableCheckbox.dispatchEvent(new Event('change'));
+            });
+        });
+    }
+
+    function updateViewLabel(mode) {
+        if (!viewModeLabel) return;
+        viewModeLabel.textContent = `Affichage : ${mode}`;
+    }
+
+    function setViewMode(mode) {
+        if (mode === 'Grille') {
+            // build grid and show
+            createGridFromTable();
+            // animate: fade out table, fade in grid
+            const tableWrapper = document.querySelector('.table-main');
+            if (tableWrapper) {
+                tableWrapper.classList.add('fade');
+                tableWrapper.classList.remove('show');
+                setTimeout(() => {
+                    tableWrapper.classList.add('d-none');
+                    tableWrapper.classList.remove('fade');
+                    tableWrapper.classList.remove('show');
+                }, 320);
+            }
+            if (productsGrid) {
+                productsGrid.classList.remove('d-none');
+                productsGrid.classList.add('fade');
+                // small timeout to trigger transition
+                setTimeout(() => productsGrid.classList.add('show'), 16);
+                productsGrid.setAttribute('aria-hidden', 'false');
+            }
+            updateViewLabel('Grille');
+            if (viewGridBtn) { viewGridBtn.classList.add('active'); viewGridBtn.setAttribute('aria-pressed', 'true'); }
+            if (viewListBtn) { viewListBtn.classList.remove('active'); viewListBtn.setAttribute('aria-pressed', 'false'); }
+            localStorage.setItem('viewMode', 'Grille');
+        } else {
+            // animate: fade out grid, fade in table
+            if (productsGrid) {
+                productsGrid.classList.add('fade');
+                productsGrid.classList.remove('show');
+                setTimeout(() => {
+                    productsGrid.classList.add('d-none');
+                    productsGrid.classList.remove('fade');
+                    productsGrid.classList.remove('show');
+                    productsGrid.setAttribute('aria-hidden', 'true');
+                }, 320);
+            }
+            const tableWrapper = document.querySelector('.table-main');
+            if (tableWrapper) {
+                tableWrapper.classList.remove('d-none');
+                tableWrapper.classList.add('fade');
+                setTimeout(() => tableWrapper.classList.add('show'), 16);
+            }
+            updateViewLabel('Liste');
+            if (viewListBtn) { viewListBtn.classList.add('active'); viewListBtn.setAttribute('aria-pressed', 'true'); }
+            if (viewGridBtn) { viewGridBtn.classList.remove('active'); viewGridBtn.setAttribute('aria-pressed', 'false'); }
+            localStorage.setItem('viewMode', 'Liste');
+        }
+    }
+
+    if (viewListBtn) viewListBtn.addEventListener('click', function () { setViewMode('Liste'); });
+    if (viewGridBtn) viewGridBtn.addEventListener('click', function () { setViewMode('Grille'); });
+
+    // Ensure we rebuild the grid when filters change
+    if (filterCategorie) filterCategorie.addEventListener('change', function () {
+        if (!productsGrid) return;
+        if (!productsGrid.classList.contains('d-none')) createGridFromTable();
+    });
+    if (searchInput) searchInput.addEventListener('input', function () {
+        if (!productsGrid) return;
+        if (!productsGrid.classList.contains('d-none')) createGridFromTable();
+    });
+
+    // Respect saved view mode
+    const savedMode = localStorage.getItem('viewMode') || 'Liste';
+    setViewMode(savedMode);
 });

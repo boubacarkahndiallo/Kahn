@@ -240,6 +240,46 @@ class CommandeController extends Controller
                 logger()->error('Dispatch SendOrderToAdminWhatsAppJob failed: ' . $ex->getMessage());
             }
         }
+        // Créer des notifications synchrones pour une visibilité immédiate
+        try {
+            $title = 'Nouvelle commande reçue';
+            $message = sprintf('Commande #%s de %s - Total: %s GNF', $commande->numero_commande, $client->nom ?? 'Client', $commande->prix_total);
+            $data = [
+                'commande_id' => $commande->id,
+                'numero_commande' => $commande->numero_commande,
+                'client_id' => $client->id,
+                'client_nom' => $client->nom ?? null,
+                'client_tel' => $client->tel ?? null,
+                'prix_total' => $commande->prix_total,
+                'produits' => $commande->produits,
+                'date_commande' => $commande->date_commande?->toIso8601String(),
+            ];
+
+            // Notifier admins
+            \App\Models\User::whereIn('role', ['admin', 'super_admin'])->each(function ($admin) use ($title, $message, $data) {
+                \App\Models\Notification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'order',
+                    'title' => $title,
+                    'message' => $message,
+                    'data' => $data,
+                ]);
+            });
+
+            // Notifier le client
+            if ($client) {
+                \App\Models\Notification::create([
+                    'user_id' => $client->id,
+                    'type' => 'order',
+                    'title' => 'Votre commande a été reçue',
+                    'message' => 'Votre commande ' . $commande->numero_commande . ' a bien été enregistrée. Nous vous contacterons sous peu.',
+                    'data' => $data,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            logger()->warning('CreateOrder notifications creation failed: ' . $e->getMessage());
+        }
+
         // Broadcast event to notify admins in real-time
         try {
             event(new OrderCreated($commande));

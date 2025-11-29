@@ -40,10 +40,11 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="telephone" class="form-label">Téléphone</label>
                                     <div class="input-group">
-                                        <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                        <span class="input-group-text phone-flag" aria-hidden="false" role="button"
+                                            tabindex="0" aria-label="Changer le pays"></span>
                                         <input type="tel" class="form-control" id="telephone" name="telephone"
                                             placeholder="Téléphone (ex: 621554784)" aria-describedby="telephoneFeedback"
-                                            required>
+                                            required inputmode="tel" autocomplete="tel">
                                     </div>
                                     <div class="invalid-feedback" id="telephoneFeedback">Veuillez entrer un numéro de
                                         téléphone valide.</div>

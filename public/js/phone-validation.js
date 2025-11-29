@@ -95,6 +95,51 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Ensure the inserted root has static position for layout
                     itiElement.style.position = 'static';
                     itiElement.classList.add('iti-in-input-group');
+                    // Accessibility & keyboard: allow interaction with the flag slot
+                    try {
+                        flagSlot.setAttribute('role', 'button');
+                        flagSlot.setAttribute('aria-label', 'Changer le pays');
+                        flagSlot.setAttribute('tabindex', '0');
+                    } catch (e) { /* ignore */ }
+
+                    // Set explicit height to match the input so the flag is perfectly centered
+                    try {
+                        const updateHeight = () => {
+                            const h = input.offsetHeight;
+                            flagSlot.style.height = h + 'px';
+                            // Ensure the inner iti element grows to fit
+                            itiElement.style.height = '100%';
+                            // Make sure the individual flag (img or background) is shown fully
+                            const selected = flagSlot.querySelector('.iti__selected-flag');
+                            if (selected) {
+                                selected.style.maxHeight = '100%';
+                                selected.style.maxWidth = '100%';
+                                selected.style.objectFit = 'contain';
+                                selected.style.overflow = 'visible';
+                                selected.style.zIndex = '3';
+                            }
+                        };
+                        updateHeight();
+                        // Save function to element dataset for later resize handling
+                        input.dataset.itiFlagResize = '1';
+                        // Avoid adding multiple listeners for the same input
+                        if (!input.dataset.itiResizeAttached) {
+                            window.addEventListener('resize', updateHeight);
+                            input.dataset.itiResizeAttached = '1';
+                        }
+                        // Keep the flag highlighted when input receives focus
+                        input.addEventListener('focus', () => flagSlot.classList.add('focused'));
+                        input.addEventListener('blur', () => flagSlot.classList.remove('focused'));
+                        // Keyboard: forward Enter/Space to the flag's internal click (open country list)
+                        flagSlot.addEventListener('keydown', function (ev) {
+                            if (ev.key === 'Enter' || ev.key === ' ') {
+                                ev.preventDefault();
+                                // click the internal selector (the small flag button). Plugin uses .iti__selected-flag
+                                const sel = flagSlot.querySelector('.iti__selected-flag');
+                                if (sel) sel.dispatchEvent(new MouseEvent('click'));
+                            }
+                        });
+                    } catch (e) { /* ignore */ }
                 }
             }, 0);
         } catch (err) {
@@ -173,8 +218,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify({
-                            tel: formTelInstance ? formTelInstance.getNumber() : (formTelInput ? formTelInput.value : '')
-                        })
+                        tel: formTelInstance ? formTelInstance.getNumber() : (formTelInput ? formTelInput.value : '')
+                    })
                 });
 
                 const data = await response.json();

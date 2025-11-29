@@ -71,7 +71,44 @@ class ProduitController extends Controller
 
         $produit = Produit::create($data);
 
-        // Dispatcher l'événement pour créer des notifications et diffuser en temps réel
+        // Créer des notifications synchrones pour que les utilisateurs les voient immédiatement
+        $title = 'Nouveau produit disponible';
+        $message = sprintf('%s est maintenant disponible au prix de %s GNF', $produit->nom, $produit->prix);
+        $data = [
+            'produit_id' => $produit->id,
+            'nom' => $produit->nom,
+            'prix' => $produit->prix,
+            'categorie' => $produit->categorie,
+            'image' => $produit->image,
+        ];
+
+        try {
+            // Notifier tous les clients
+            \App\Models\User::where('role', 'client')->each(function ($client) use ($title, $message, $data) {
+                \App\Models\Notification::create([
+                    'user_id' => $client->id,
+                    'type' => 'product',
+                    'title' => $title,
+                    'message' => $message,
+                    'data' => $data,
+                ]);
+            });
+
+            // Notifier les admins aussi
+            \App\Models\User::whereIn('role', ['admin', 'super_admin'])->each(function ($admin) use ($title, $message, $data) {
+                \App\Models\Notification::create([
+                    'user_id' => $admin->id,
+                    'type' => 'product',
+                    'title' => $title,
+                    'message' => $message,
+                    'data' => $data,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            logger()->warning('CreateProduct notifications creation failed: ' . $e->getMessage());
+        }
+
+        // Finally, broadcast the ProductCreated event (clients subscribed will receive the toast/refresh)
         try {
             event(new ProductCreated($produit));
         } catch (\Throwable $e) {

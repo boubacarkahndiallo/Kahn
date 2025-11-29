@@ -2,7 +2,8 @@
         .slide-in-left {
             opacity: 0;
             transform: translateX(-80px);
-            filter: none; /* remove blur so text remains crisp */
+            filter: none;
+            /* remove blur so text remains crisp */
             animation: slideInLeft 1.4s ease-out forwards;
         }
 
