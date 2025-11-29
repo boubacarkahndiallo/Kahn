@@ -31,8 +31,7 @@
             <div class="col-md-8 col-12 d-flex gap-3 justify-content-end flex-wrap filter-bar">
                 <!-- Toggle vue (liste / grille) -->
                 <div class="d-flex flex-column toggle-area">
-                    <label class="form-label fw-semibold mb-1 d-block">Afficher : <small id="view-mode-label"
-                            class="text-muted ms-1">Liste</small></label>
+                    <label class="form-label fw-semibold mb-1 d-block">Afficher </label>
                     <div class="btn-group" role="group" aria-label="Afficher en liste ou grille">
                         <button type="button" class="btn btn-outline-success btn-sm" id="view-list" aria-pressed="true"><i
                                 class="fa fa-bars"></i></button>
