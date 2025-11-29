@@ -153,7 +153,7 @@
                         <ul class="list-group list-group-flush">
                             @forelse($recentProduits as $p)
                                 <li class="list-group-item d-flex align-items-center" style="padding: 16px;">
-                                    <img src="{{ $p->image ? asset('storage/' . $p->image) : asset('images/logo1.png') }}"
+                                    <img src="{{ $p->image ? Storage::url($p->image) : asset('images/logo1.png') }}"
                                         alt="{{ $p->nom }}" style="width:56px; height:56px; object-fit:cover;"
                                         class="me-3 rounded">
                                     <div class="flex-grow-1 min-w-0">

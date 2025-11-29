@@ -50,10 +50,15 @@
                 <!-- À propos -->
                 <div class="col-lg-4 col-md-12 col-sm-12">
                     <div class="footer-widget">
-                        <h4>À propos de nous !</h4>
-                        <p>Nous proposons les meilleurs biens immobiliers en guinée.</p>
-                        <p>Vente, location ou gestion immobilière, nous vous accompagnons pour trouver votre futur
-                            logement.</p>
+                        <h4>À propos de Mourima Market</h4>
+                        <p>Mourima Market est votre plateforme locale dédiée à la distribution de produits agricoles
+                            frais et de qualité.</p>
+                        <p>Nous travaillons directement avec les petits producteurs pour garantir traçabilité, juste
+                            rémunération et fraîcheur de chaque produit livré.</p>
+                        <p class="mt-2"><strong>Notre mission :</strong> Rendre l'alimentation saine et locale
+                            accessible à tous, partout en Guinée.</p>
+                        <p class="mt-2"><a href="{{ route('app_about') }}" class="text-success"
+                                aria-label="En savoir plus sur Mourima Market">En savoir plus &raquo;</a></p>
                     </div>
                 </div>
 

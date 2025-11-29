@@ -1034,6 +1034,8 @@ ul.cart-list>li.total>.btn:hover {
     left: 0;
     top: 0;
     opacity: 0.5;
+    z-index: 1;
+    /* Ensure overlay sits above image but below container text */
 }
 
 .cover-slides h1 {
@@ -3276,4 +3278,41 @@ ul.cart-list>li.total>.btn:hover {
     font-weight: 700;
     padding: 12px 25px;
     border: none;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile / touch devices: disable decorative hover pseudo-elements that create
+   progress bars, animated background circles, or underline grow effects.
+   These appear on :hover on desktop but cause visual artifacts on touch
+   screens (they show after a tap). Remove them with a media query for
+   devices that do not support hover or have coarse pointers.
+   ------------------------------------------------------------------------ */
+@media (hover: none), (pointer: coarse), (max-width: 768px) {
+    /* general cases */
+    .nav-link::after, .nav-link::before,
+    .navbar a::after, .navbar a::before,
+    .navbar-brand::after, .navbar-brand::before,
+    .hvr-hover::after, .hvr-hover::before,
+    .service-block-inner::after, .service-block-inner::before,
+    .service-icon a::after, .service-icon a::before,
+    .footer-link ul li a::before, .footer-link ul li a::after,
+    .category-card::after, .category-overlay::after,
+    .category-card::before, .category-overlay::before {
+        display: none !important;
+        opacity: 0 !important;
+        transform: none !important;
+        transition: none !important;
+        -webkit-transform: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        content: none !important;
+    }
+
+    /* Also prevent hover transforms on the elements themselves */
+    .hvr-hover, .nav-link, .navbar a, .service-block-inner, .service-icon a {
+        -webkit-transform: none !important;
+        transform: none !important;
+        -webkit-transition: none !important;
+        transition: none !important;
+    }
 }

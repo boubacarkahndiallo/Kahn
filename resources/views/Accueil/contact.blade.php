@@ -39,8 +39,14 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="telephone" class="form-label">Téléphone</label>
-                                    <input type="tel" class="form-control" id="telephone" name="telephone"
-                                        placeholder="Téléphone (ex: 621554784)" required>
+                                    <div class="input-group">
+                                        <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                        <input type="tel" class="form-control" id="telephone" name="telephone"
+                                            placeholder="Téléphone (ex: 621554784)" aria-describedby="telephoneFeedback"
+                                            required>
+                                    </div>
+                                    <div class="invalid-feedback" id="telephoneFeedback">Veuillez entrer un numéro de
+                                        téléphone valide.</div>
                                 </div>
                                 <div class="col-md-12 mb-3">
                                     <label for="email" class="form-label">Adresse email</label>

@@ -44,4 +44,10 @@ return [
         'token' => env('WHATSAPP_TOKEN'),
     ],
 
+    // Configuration pour les paramètres administratifs (ex : numéro WhatsApp de l'admin)
+    'admin' => [
+        // Numéro WhatsApp administrateur (mettre en E.164 ou avec indicatif pays)
+        'whatsapp_number' => env('ADMIN_WHATSAPP_NUMBER', '+224623248567'),
+    ],
+
 ];

@@ -28,17 +28,56 @@
 	   Gallery
 	   ................................................. */
 
-	$('#slides-shop').superslides({
-		inherit_width_from: '.cover-slides',
-		inherit_height_from: '.cover-slides',
-		play: 5000,
-		animation: 'fade',
-		// Allow the page to be scrollable on touch devices by enabling the plugin's
-		// scrollable option. This lets vertical swipes pass through to the page.
-		scrollable: true,
-	});
+	// Prefer Superslides if the element uses slides-container markup; otherwise fallback to
+	// Bootstrap Carousel when the markup matches bootstrap requirements.
+	(function initSlider() {
+		var $slidesEl = $('#slides-shop');
+		var isMobile = window.matchMedia && window.matchMedia('(max-width: 991px)').matches;
+		var hasSlidesContainerMarkup = $slidesEl.length && $slidesEl.find('.slides-container').length;
 
-	$(".cover-slides ul li").append("<div class='overlay-background'></div>");
+		// If markup matches Superslides and the plugin is available, prefer it.
+		if (hasSlidesContainerMarkup && $.fn.superslides) {
+			try {
+				$slidesEl.superslides({
+					inherit_width_from: '.cover-slides',
+					inherit_height_from: '.cover-slides',
+					play: 5000,
+					animation: 'fade',
+					// Allow the page to be scrollable on touch devices by enabling scrollable
+					scrollable: true,
+				});
+			} catch (err) {
+				console.warn('Superslides init failed:', err);
+			}
+		} else if (typeof bootstrap !== 'undefined' && bootstrap.Carousel) {
+			try {
+				// Bootstrap carousel requires a specific markup; initialize only if valid
+				var carouselInner = $slidesEl.find('.carousel-inner');
+				var carouselEl = $slidesEl.get(0);
+				if (carouselEl && carouselInner.length) {
+					bootstrap.Carousel.getOrCreateInstance(carouselEl, { interval: 5000, pause: 'hover', keyboard: true });
+				}
+			} catch (err) {
+				// ignore
+			}
+		} else if ($slidesEl.length && $.fn.superslides) {
+			// As a last resort, fallback to Superslides for either mobile/desktop
+			try {
+				$slidesEl.superslides({
+					inherit_width_from: '.cover-slides',
+					inherit_height_from: '.cover-slides',
+					play: 5000,
+					animation: 'fade',
+					scrollable: true,
+				});
+			} catch (err) {
+				console.warn('Fallback superslides init failed:', err);
+			}
+		}
+	})();
+
+	// Ensure that every slide has an overlay background, whether using UL/LIs (Superslides) or Bootstrap Carousel
+	$(".cover-slides .slides-container li, .cover-slides .carousel-item").append("<div class='overlay-background'></div>");
 
 	/* ..............................................
 	   Map Full
@@ -92,14 +131,47 @@
 	   Offer Box
 	   ................................................. */
 
-	$('.offer-box').inewsticker({
-		speed: 3000,
-		effect: 'fade',
-		dir: 'ltr',
-		font_size: 13,
-		color: '#ffffff',
-		font_family: 'Montserrat, sans-serif',
-		delay_after: 1000
+	// Initialize the offer ticker. Keep a safe re-init on document ready in case the
+	// initial script runs before the DOM or when the file is hot-reloaded.
+
+	function initOfferTicker() {
+		try {
+			if ($.fn.inewsticker && $('.offer-box').length) {
+				$('.offer-box').inewsticker({
+					speed: 3000,
+					effect: 'slide',
+					dir: 'ltr',
+					font_size: 13,
+					color: '#ffffff',
+					font_family: 'Montserrat, sans-serif',
+					delay_after: 1000
+				});
+			} else {
+				// Fallback: implement a simple vertical ticker if plugin is not available
+				$('.offer-box').each(function () {
+					var $ticker = $(this);
+					var speed = 3000;
+					var fn = function () {
+						var $items = $ticker.children();
+						if ($items.length <= 1) return;
+						var $first = $items.eq(0);
+						var $second = $items.eq(1);
+						$first.slideUp(function () { $first.appendTo($ticker).show(); });
+					};
+					setInterval(fn, speed);
+				});
+			}
+		} catch (e) {
+			console.warn('Offer ticker initialization error', e);
+		}
+	}
+
+	// Run now in case earlier code didn't pick it up
+	initOfferTicker();
+
+	// Ensure initialization also occurs after the DOM is ready
+	$(document).ready(function () {
+		initOfferTicker();
 	});
 
 	/* ..............................................

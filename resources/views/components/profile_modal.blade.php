@@ -22,7 +22,7 @@
                 <div class="text-center" style="margin-top:-60px;">
                     <div class="position-relative d-inline-block">
                         <img id="profilePhotoPreview"
-                            src="{{ auth()->user()->photo ? asset('storage/' . auth()->user()->photo) : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22%3E%3Ccircle cx=%2270%22 cy=%2270%22 r=%2770%22 fill=%22%23e9ecef%22/%3E%3Ctext x=%2270%22 y=%2280%22 text-anchor=%22middle%22 font-size=%2248%22 fill=%22%23999%22%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E' }}"
+                            src="{{ auth()->user()->photo ? Storage::url(auth()->user()->photo) : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22%3E%3Ccircle cx=%2270%22 cy=%2270%22 r=%2770%22 fill=%22%23e9ecef%22/%3E%3Ctext x=%2270%22 y=%2280%22 text-anchor=%22middle%22 font-size=%2248%22 fill=%22%23999%22%3E%F0%9F%91%A4%3C/text%3E%3C/svg%3E' }}"
                             alt="Photo de profil" class="rounded-circle"
                             style="width:130px; height:130px; object-fit:cover; border:5px solid #ffffff; box-shadow:0 10px 30px rgba(0,0,0,0.12); cursor:pointer;">
                         <div class="position-absolute bottom-0 end-0 bg-success rounded-circle p-2"
@@ -62,15 +62,26 @@
 
                         <div class="col-md-6">
                             <label for="profileTel" class="form-label">Téléphone</label>
-                            <input type="text" class="form-control form-control" id="profileTel" name="tel"
-                                value="{{ auth()->user()->tel ?? '' }}" placeholder="+224 ...">
+                            <div class="input-group">
+                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <input type="tel" class="form-control form-control" id="profileTel" name="tel"
+                                    value="{{ auth()->user()->tel ?? '' }}" placeholder="+224 ..."
+                                    aria-describedby="profileTelFeedback">
+                            </div>
+                            <div class="invalid-feedback d-none" id="profileTelFeedback">Numéro invalide</div>
                             <small class="text-danger d-none" id="error-tel"></small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="profileWhatsapp" class="form-label">WhatsApp</label>
-                            <input type="text" class="form-control form-control" id="profileWhatsapp" name="whatsapp"
-                                value="{{ auth()->user()->whatsapp ?? '' }}" placeholder="+224 ...">
+                            <div class="input-group">
+                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                <input type="tel" class="form-control form-control" id="profileWhatsapp"
+                                    name="whatsapp" value="{{ auth()->user()->whatsapp ?? '' }}"
+                                    placeholder="+224 ..." aria-describedby="profileWhatsappFeedback">
+                            </div>
+                            <div class="invalid-feedback d-none" id="profileWhatsappFeedback">Numéro WhatsApp invalide
+                            </div>
                             <small class="text-danger d-none" id="error-whatsapp"></small>
                         </div>
 
@@ -248,8 +259,8 @@
 
                         // Si une photo a été changée, mettre à jour l'aperçu
                         if (user.photo) {
-                            document.getElementById('profilePhotoPreview').src = '/storage/' + user
-                                .photo;
+                            document.getElementById('profilePhotoPreview').src = window
+                                .STORAGE_URL + '/' + user.photo;
                         }
                     }
 

@@ -2,7 +2,7 @@
         .slide-in-left {
             opacity: 0;
             transform: translateX(-80px);
-            filter: blur(6px);
+            filter: none; /* remove blur so text remains crisp */
             animation: slideInLeft 1.4s ease-out forwards;
         }
 
@@ -24,7 +24,7 @@
             0% {
                 opacity: 0;
                 transform: translateX(-100px);
-                filter: blur(8px);
+                filter: none;
             }
 
             100% {

@@ -67,8 +67,8 @@
                                     <img id="previewPhoto" src="#" alt="Aperçu photo"
                                         style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;">
                                 </div>
-                                <input type="file" name="image" id="photo" class="form-control d-none" accept="image/*"
-                                    onchange="previewImage(event)">
+                                <input type="file" name="image" id="photo" class="form-control d-none"
+                                    accept="image/*" onchange="previewImage(event)">
                                 <script>
                                     function previewImage(event) {
                                         const input = event.target;
@@ -76,7 +76,7 @@
                                         const iconPlus = document.getElementById('iconPlus');
                                         if (input.files && input.files[0]) {
                                             const reader = new FileReader();
-                                            reader.onload = function (e) {
+                                            reader.onload = function(e) {
                                                 preview.src = e.target.result;
                                                 preview.style.display = 'block';
                                                 iconPlus.style.display = 'none';
@@ -89,8 +89,8 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" for="nom">Nom du produit</label>
-                                <input type="text" class="form-control" id="nom" name="nom" required autocomplete="nom"
-                                    autofocus value="{{ old('nom') }}">
+                                <input type="text" class="form-control" id="nom" name="nom" required
+                                    autocomplete="nom" autofocus value="{{ old('nom') }}">
                                 <label class="form-label fw-bold mt-3" for="categorie">Catégorie</label>
                                 <select class="form-select" id="categorie" name="categorie" required
                                     autocomplete="categorie" autofocus>
@@ -103,8 +103,8 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" for="prix">Prix</label>
-                                <input type="number" class="form-control" id="prix" name="prix" required autocomplete="prix"
-                                    autofocus value="{{ old('prix') }}">
+                                <input type="number" class="form-control" id="prix" name="prix" required
+                                    autocomplete="prix" autofocus value="{{ old('prix') }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" for="stock">Stock</label>
@@ -182,7 +182,7 @@
                             <td>{{ $key + 1 }}</td>
                             <td>
                                 @if ($produit->image)
-                                    <img src="{{ asset('storage/' . $produit->image) }}" alt="Image {{ $produit->nom }}">
+                                    <img src="{{ Storage::url($produit->image) }}" alt="Image {{ $produit->nom }}">
                                 @else
                                     <span class="text-muted">Pas d’image</span>
                                 @endif
@@ -232,7 +232,7 @@
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function() {
             const table = document.getElementById("produitTable");
             const headers = table.querySelectorAll(".sortable");
             let sortDirection = {};
@@ -255,9 +255,9 @@
                             return isAscending ? aText - bText : bText - aText;
                         }
 
-                        return isAscending
-                            ? aText.localeCompare(bText)
-                            : bText.localeCompare(aText);
+                        return isAscending ?
+                            aText.localeCompare(bText) :
+                            bText.localeCompare(aText);
                     });
 
                     header.classList.add(isAscending ? "sorted-asc" : "sorted-desc");

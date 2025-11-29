@@ -175,8 +175,8 @@
                             <td class="text-center fw-bold" style="color: #1c911e;">{{ $key + 1 }}</td>
                             <td class="text-center">
                                 @if ($user->photo)
-                                    <img src="{{ asset('storage/' . $user->photo) }}" width="55" height="55"
-                                        class="rounded-circle border"
+                                    <img src="{{ $user->photo ? Storage::url($user->photo) : asset('images/logo1.png') }}"
+                                        width="55" height="55" class="rounded-circle border"
                                         style="border: 2px solid #1c911e; object-fit: cover;">
                                 @else
                                     <div class="rounded-circle d-inline-flex align-items-center justify-content-center"

@@ -28,6 +28,50 @@
     <!-- intl-tel-input CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" />
 
+    <!-- Small UI tweaks for intl-tel-input to show a small flag+code box before the phone input -->
+    <style>
+        /* Keeps the intl flag/dial-code visually attached to an input, like an input-group prepend */
+        .iti {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: -1px;
+            /* align with form-control border */
+        }
+
+        .iti__flag-container {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            padding-left: 6px !important;
+            padding-right: 6px !important;
+        }
+
+        .iti__selected-dial-code {
+            margin-left: 6px;
+            font-weight: 600;
+        }
+
+        /* Remove overlapping left border on the form-control to create unified input effect */
+        input[type="tel"].form-control {
+            border-left: 0;
+        }
+
+        /* Make the small flag box look like an input-group-prepend */
+        .iti__flag-container,
+        .iti__selected-dial-code {
+            border: 1px solid #ced4da;
+            border-right: 0;
+            background: #fff;
+            border-radius: .25rem 0 0 .25rem;
+            height: calc(2.25rem + 2px);
+        }
+
+        .iti__country-list {
+            z-index: 99999;
+            /* ensure dropdown is above modals */
+        }
+    </style>
+
     <!-- CSS locaux -->
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('css/style2.css') }}">
@@ -43,9 +87,29 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- JSON-LD Organization schema for SEO -->
+    <script type="application/ld+json">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => 'Mourima Market',
+            'url' => rtrim(config('app.url'), '/'),
+            'logo' => asset('images/logo1.png'),
+            'contactPoint' => [[
+                '@type' => 'ContactPoint',
+                'telephone' => '+224623248567',
+                'contactType' => 'Customer service',
+            ]],
+        ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT) !!}
+    </script>
 </head>
 
 <body>
+    <script>
+        // Fournit les URLs absolues pour les scripts côté client
+        window.APP_URL = "{{ rtrim(config('app.url'), '/') }}";
+        window.STORAGE_URL = window.APP_URL + '/storage';
+    </script>
     {{-- Navbar --}}
     @include('Navbar.navbar')
 

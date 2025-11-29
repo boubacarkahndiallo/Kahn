@@ -1542,3 +1542,26 @@ nav.navbar.bootsnav ul.dropdown-menu.megamenu-content .content ul.menu-col li a:
         padding-bottom: 30px;
     }
 }
+
+/* Disable animated nav underline and :after pseudo elements on touch/mobile */
+@media (hover: none), (pointer: coarse), (max-width: 768px) {
+    .navbar a::after, .nav-link::after, .navbar-nav>li>a::after, .navbar-brand::after {
+        display: none !important;
+        width: 0 !important;
+        opacity: 0 !important;
+        transition: none !important;
+        content: none !important;
+    }
+}
+
+/* Desktop: remove progress underline on logo only (navbar-brand) */
+@media (min-width: 769px) {
+    .navbar-brand::after,
+    .navbar-brand:hover::after {
+        display: none !important;
+        width: 0 !important;
+        opacity: 0 !important;
+        content: none !important;
+        transition: none !important;
+    }
+}

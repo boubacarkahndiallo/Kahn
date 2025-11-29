@@ -85,9 +85,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const clientForm = document.getElementById('clientRegistrationForm');
     let formFilled = false;
     if (clientForm) {
-        const nomInput = document.getElementById('nom');
-        const telInput = document.getElementById('tel');
-        const adresseInput = document.getElementById('adresse');
+        const nomInput = clientForm.querySelector('#nom') || document.getElementById('nom');
+        const telInput = clientForm.querySelector('input[name="tel"]') || document.getElementById('tel');
+        const adresseInput = clientForm.querySelector('#adresse') || document.getElementById('adresse');
         const nomVal = nomInput ? nomInput.value.trim() : '';
         const telVal = telInput ? telInput.value.trim() : '';
         const adresseVal = adresseInput ? adresseInput.value.trim() : '';

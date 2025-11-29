@@ -111,10 +111,10 @@
                             <tbody id="produitsTableBody">
                                 <tr>
                                     <td>
-                                        <select name="produits[0][nom]" class="form-select produitSelect" required>
+                                        <select name="produits[0][produit_id]" class="form-select produitSelect" required>
                                             <option value="" disabled selected>-- Choisir --</option>
                                             @foreach ($produits as $produit)
-                                                <option value="{{ $produit->nom }}" data-prix="{{ $produit->prix }}">
+                                                <option value="{{ $produit->id }}" data-prix="{{ $produit->prix }}" data-nom="{{ $produit->nom }}">
                                                     {{ $produit->nom }}</option>
                                             @endforeach
                                         </select>

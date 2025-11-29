@@ -87,7 +87,11 @@ $(document).ready(function () {
             const nom = $(this).find('.produitSelect').val();
             const qty = parseInt($(this).find('.quantiteInput').val()) || 0;
             const prix = parseFloat($(this).find('.prixInput').val()) || 0;
-            if (nom) produits.push({ nom, qty, prix });
+            if (nom) {
+                const produitId = nom; // now option value is id
+                const produitNom = $(this).find('.produitSelect option:selected').data('nom') || $(this).find('.produitSelect option:selected').text();
+                produits.push({ produit_id: produitId, nom: produitNom, qty, prix });
+            }
         });
 
         if (produits.length === 0) {

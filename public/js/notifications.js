@@ -70,12 +70,21 @@
             if (!res.ok) return;
             const data = await res.json();
             const countEl = document.getElementById('notif-count');
+            const footerCountEl = document.getElementById('footer-notif-count');
             if (countEl) {
                 if (data.unread_count && data.unread_count > 0) {
                     countEl.style.display = 'inline-block';
                     countEl.textContent = data.unread_count;
                 } else {
                     countEl.style.display = 'none';
+                }
+            }
+            if (footerCountEl) {
+                if (data.unread_count && data.unread_count > 0) {
+                    footerCountEl.style.display = 'inline-block';
+                    footerCountEl.textContent = data.unread_count;
+                } else {
+                    footerCountEl.style.display = 'none';
                 }
             }
         } catch (e) { console.warn(e); }

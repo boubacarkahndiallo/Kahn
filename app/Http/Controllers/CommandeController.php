@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Commande;
 use App\Models\Client;
+use App\Models\Produit;
+use Illuminate\Support\Facades\DB;
 use App\Events\OrderCreated;
 use App\Jobs\SendOrderDeliveryConfirmationJob;
 use App\Jobs\SendOrderToAdminWhatsAppJob;
@@ -81,6 +83,7 @@ class CommandeController extends Controller
             foreach ($request->produits as $p) {
                 // ensure keys qty/prix/nom exist with expected names
                 $normalized[] = [
+                    'produit_id' => $p['produit_id'] ?? $p['id'] ?? null,
                     'nom' => $p['nom'] ?? $p['name'] ?? null,
                     'qty' => $p['qty'] ?? $p['quantite'] ?? $p['quantity'] ?? null,
                     'prix' => $p['prix'] ?? $p['price'] ?? null,
@@ -93,6 +96,7 @@ class CommandeController extends Controller
         $request->validate([
             'client_id' => 'required|exists:clients,id',
             'produits' => 'required|array|min:1',
+            'produits.*.produit_id' => 'required|integer|exists:produits,id',
             'produits.*.nom' => 'required|string',
             'produits.*.qty' => 'required|integer|min:1', // quantité normalisée
             'produits.*.prix' => 'required|numeric|min:0',
@@ -176,6 +180,21 @@ class CommandeController extends Controller
             }
         }
 
+        // Vérifier la disponibilité du stock pour chaque produit commandé
+        foreach ($request->produits as $p) {
+            $prod = Produit::find($p['produit_id']);
+            if ($prod) {
+                $available = (int)$prod->stock;
+                $qty = (int)$p['qty'];
+                if ($qty > $available) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Quantité demandée non disponible pour \"{$prod->nom}\" (stock: {$available})",
+                    ], 422);
+                }
+            }
+        }
+
         // Créer la commande sans dépendre d'un calcul non-atomique du numéro.
         // Nous générerons ensuite `CMD-###` à partir de l'ID auto-incrémenté,
         // ce qui évite les collisions concurrentes.
@@ -194,7 +213,8 @@ class CommandeController extends Controller
 
         // Envoi WhatsApp immédiat à l'admin (tentative synchrone + job en arrière-plan si échec)
         try {
-            $adminNumber = config('services.admin.whatsapp_number') ?? env('ADMIN_WHATSAPP_NUMBER', '621554784');
+            // Prefer the explicit configuration from config/services.php and fallback to env var
+            $adminNumber = config('services.admin.whatsapp_number') ?? env('ADMIN_WHATSAPP_NUMBER', '+224623248567');
             $produitsList = collect($commande->produits)->map(function ($p) {
                 return ($p['nom'] ?? '') . ' x' . ($p['qty'] ?? 1) . ' (' . ($p['prix'] ?? 0) . ' GNF)';
             })->implode(', ');
@@ -233,6 +253,22 @@ class CommandeController extends Controller
             SendOrderDeliveryConfirmationJob::dispatch($commande->id)->delay(now()->addHour());
         } catch (\Throwable $e) {
             logger()->error('Dispatch SendOrderDeliveryConfirmationJob failed: ' . $e->getMessage());
+        }
+
+        // Réduire le stock pour chaque produit commandé (opération atomique)
+        try {
+            DB::transaction(function () use ($request) {
+                foreach ($request->produits as $p) {
+                    $produitId = $p['produit_id'] ?? null;
+                    $qty = (int)($p['qty'] ?? 0);
+                    if ($produitId && $qty > 0) {
+                        \App\Models\Produit::where('id', $produitId)->decrement('stock', $qty);
+                    }
+                }
+            });
+        } catch (\Throwable $e) {
+            logger()->error('Erreur réduction stock: ' . $e->getMessage());
+            // ne pas bloquer la commande si la réduction échoue; log pour investigation
         }
 
         // Répondre différemment selon le type de requête (AJAX/json ou formulaire classique)

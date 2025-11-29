@@ -282,8 +282,8 @@
                             <div class="user-info">
                                 <div class="text-center mb-3">
                                     @if (auth()->user()->photo)
-                                        <img src="{{ asset('storage/' . auth()->user()->photo) }}"
-                                            alt="Photo de profil" class="rounded-circle"
+                                        <img src="{{ Storage::url(auth()->user()->photo) }}" alt="Photo de profil"
+                                            class="rounded-circle"
                                             style="width: 100px; height: 100px; object-fit: cover;">
                                     @else
                                         @php
@@ -510,7 +510,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body d-flex">
                                         <div class="me-3" style="width: 100px; height: 100px;">
-                                            <img src="/storage/${product.image}" alt="${product.nom}"
+                                            <img src="${window.STORAGE_URL}/${product.image}" alt="${product.nom}"
                                                 class="img-fluid rounded" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                         <div>
@@ -561,17 +561,20 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="tel">Téléphone</label>
                             <div class="input-group">
+                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
                                 <input type="tel" class="form-control" id="tel" name="tel" required
-                                    autocomplete="tel" value="{{ old('tel') }}">
-                                <div class="invalid-feedback"></div>
+                                    autocomplete="tel" aria-describedby="telFeedback_navbar_updated"
+                                    value="{{ old('tel') }}">
+                                <div class="invalid-feedback" id="telFeedback_navbar_updated"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="whatsapp">WhatsApp</label>
                             <div class="input-group">
+                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
                                 <input type="tel" class="form-control" name="whatsapp" id="whatsapp"
-                                    value="{{ old('whatsapp') }}">
-                                <div class="invalid-feedback"></div>
+                                    aria-describedby="whatsappFeedback_navbar_updated" value="{{ old('whatsapp') }}">
+                                <div class="invalid-feedback" id="whatsappFeedback_navbar_updated"></div>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -581,6 +584,16 @@
                         </div>
                         <input type="hidden" name="role" value="client">
                         <input type="hidden" name="statut" value="actif">
+                        <input type="hidden" id="tel_e164" name="tel_e164" value="{{ old('tel_e164') }}">
+                        <input type="hidden" id="tel_country" name="tel_country" value="{{ old('tel_country') }}">
+                        <input type="hidden" id="tel_dialcode" name="tel_dialcode"
+                            value="{{ old('tel_dialcode') }}">
+                        <input type="hidden" id="whatsapp_e164" name="whatsapp_e164"
+                            value="{{ old('whatsapp_e164') }}">
+                        <input type="hidden" id="whatsapp_country" name="whatsapp_country"
+                            value="{{ old('whatsapp_country') }}">
+                        <input type="hidden" id="whatsapp_dialcode" name="whatsapp_dialcode"
+                            value="{{ old('whatsapp_dialcode') }}">
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

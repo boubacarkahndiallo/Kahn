@@ -81,21 +81,53 @@
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold" for="tel">Téléphone</label>
-                                    <input type="text" class="form-control" id="tel" name="tel" required
-                                        value="{{ old('tel') }}">
+                                    <div class="input-group">
+                                        <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                        <input type="tel" class="form-control phone-input" id="tel" name="tel"
+                                            required value="{{ old('tel') }}" aria-describedby="telFeedback">
+                                    </div>
+                                    <input type="hidden" id="tel_e164" name="tel_e164" value="{{ old('tel_e164') }}">
+                                    <input type="hidden" id="tel_country" name="tel_country"
+                                        value="{{ old('tel_country') }}">
+                                    <input type="hidden" id="tel_dialcode" name="tel_dialcode"
+                                        value="{{ old('tel_dialcode') }}">
+                                    <div class="invalid-feedback" id="telFeedback">Veuillez entrer un numéro de téléphone
+                                        valide.</div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" for="whatsapp">WhatsApp</label>
-                                <input type="text" class="form-control" id="whatsapp" name="whatsapp"
-                                    value="{{ old('whatsapp') }}">
+                                <div class="input-group">
+                                    <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                                    <input type="tel" class="form-control phone-input" id="whatsapp"
+                                        name="whatsapp" value="{{ old('whatsapp') }}"
+                                        aria-describedby="whatsappFeedback">
+                                </div>
+                                <input type="hidden" id="whatsapp_e164" name="whatsapp_e164"
+                                    value="{{ old('whatsapp_e164') }}">
+                                <input type="hidden" id="whatsapp_country" name="whatsapp_country"
+                                    value="{{ old('whatsapp_country') }}">
+                                <input type="hidden" id="whatsapp_dialcode" name="whatsapp_dialcode"
+                                    value="{{ old('whatsapp_dialcode') }}">
+                                <div class="invalid-feedback" id="whatsappFeedback">Veuillez entrer un numéro WhatsApp
+                                    valide.</div>
+                                <input type="hidden" id="whatsapp_e164" name="whatsapp_e164"
+                                    value="{{ old('whatsapp_e164') }}">
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold" for="adresse">Adresse</label>
-                                <input type="text" class="form-control" id="adresse" name="adresse"
-                                    value="{{ old('adresse') }}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="adresse" name="adresse"
+                                        value="{{ old('adresse') }}" aria-label="Adresse">
+                                    <button id="detectPositionBtn" class="btn btn-outline-secondary" type="button"
+                                        title="Détecter ma position">
+                                        <i class="fa fa-map-marker-alt"></i>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
+                                <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
                             </div>
 
                             <div class="col-md-6">
@@ -178,7 +210,8 @@
                             <td>{{ $key + 1 }}</td>
                             <td>
                                 @if ($client->image)
-                                    <img src="{{ asset('storage/' . $client->image) }}" alt="Photo {{ $client->nom }}"
+                                    <img src="{{ $client->image ? Storage::url($client->image) : asset('images/logo1.png') }}"
+                                        alt="Photo {{ $client->nom }}"
                                         style="width:60px; height:60px; border-radius:50%;">
                                 @else
                                     @php
@@ -208,7 +241,14 @@
                             <td>{{ $client->nom }}</td>
                             <td>{{ $client->tel }}</td>
                             <td>{{ $client->whatsapp }}</td>
-                            <td>{{ $client->adresse }}</td>
+                            <td>
+                                {{ $client->adresse }}
+                                @if ($client->latitude && $client->longitude)
+                                    <br>
+                                    <a href="https://www.google.com/maps?q={{ $client->latitude }},{{ $client->longitude }}"
+                                        target="_blank" rel="noopener" class="small">Voir sur Google Maps</a>
+                                @endif
+                            </td>
                             <td>
                                 @if ($client->statut == 'actif')
                                     <span class="fw-bold text-success">Actif</span>
@@ -248,3 +288,78 @@
     </div>
 
 @endsection
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const detectBtn = document.getElementById('detectPositionBtn');
+            if (detectBtn) {
+                detectBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Use HTML5 geolocation
+                    if (!navigator.geolocation) {
+                        alert('Géolocalisation non supportée par votre navigateur');
+                        return;
+                    }
+                    detectBtn.disabled = true;
+                    detectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                    navigator.geolocation.getCurrentPosition(async function(position) {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            document.getElementById('latitude').value = lat;
+                            document.getElementById('longitude').value = lon;
+                            // Reverse geocode with Nominatim for readable address
+                            try {
+                                const resp = await fetch(
+                                    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
+                                );
+                                const data = await resp.json();
+                                if (data && data.display_name) {
+                                    document.getElementById('adresse').value = data.display_name;
+                                }
+                            } catch (err) {
+                                console.warn('Reverse geocoding failed', err);
+                            } finally {
+                                detectBtn.disabled = false;
+                                detectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                            }
+                        },
+                        function(err) {
+                            detectBtn.disabled = false;
+                            detectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                            alert('Impossible d\'obtenir votre position: ' + (err.message ||
+                                'Erreur'));
+                        }, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        });
+                });
+            }
+
+            // When opening voir modal, inject coordinates and map link if present
+            document.querySelectorAll('.btn-view').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const id = this.dataset.id;
+                    const modalContent = document.getElementById('voirClientContent');
+                    modalContent.innerHTML = '<p class="text-muted">Chargement...</p>';
+                    try {
+                        const resp = await fetch(`/clients/${id}/ajax-show`);
+                        const data = await resp.json();
+                        if (data && data.nom) {
+                            let mapHtml = '';
+                            if (data.latitude && data.longitude) {
+                                mapHtml =
+                                    `\n                                    <p>Coordonnées: <strong>${data.latitude}, ${data.longitude}</strong></p>\n                                    <p><a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener">Voir sur Google Maps</a></p>`;
+                            }
+                            modalContent.innerHTML =
+                                `\n                                <div class="row g-3">\n                                    <div class="col-md-4 text-center">\n                                        ${data.image ? `<img src="${data.image}" class="img-fluid rounded" alt="${data.nom}">` : ''}\n                                    </div>\n                                    <div class="col-md-8">\n                                        <h5>${data.nom}</h5>\n                                        <p>Téléphone: ${data.tel}</p>\n                                        <p>WhatsApp: ${data.whatsapp || 'N/A'}</p>\n                                        <p>Adresse: ${data.adresse || 'N/A'}</p>\n                                        ${mapHtml}\n                                        <p>Statut: ${data.statut}</p>\n                                        <p>${data.description || ''}</p>\n                                    </div>\n                                </div>\n                            `;
+                        }
+                    } catch (err) {
+                        modalContent.innerHTML =
+                            '<p class="text-danger">Impossible de charger les détails du client.</p>';
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

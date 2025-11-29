@@ -46,8 +46,19 @@
             }
         }
 
+        /* Keep original definition and the pulsing shadow animation */
         .btn-cta-commande.pulsing {
             animation: pulse-cta 2.5s infinite;
+        }
+        /* Blink animation used specifically for CTA in the slider */
+        @keyframes blink-cta {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+        }
+
+        /* Apply blink animation only for the CTA within the slider */
+        .cover-slides .btn-cta-commande.pulsing {
+            animation: blink-cta 1.2s ease-in-out infinite;
         }
 
         .btn-cta-commande i {
@@ -87,6 +98,31 @@
             }
         }
 
+        /* GLOBAL OVERRIDES: Désactiver toute animation sur le slider */
+        .cover-slides .slide-in-left,
+        .cover-slides .delay-1,
+        .cover-slides .delay-2,
+        .cover-slides .delay-3,
+        .cover-slides h1,
+        .cover-slides p {
+            transform: none !important;
+            opacity: 1 !important;
+            animation: none !important;
+            transition: none !important;
+            /* ensure no blur remains from other CSS rules */
+            filter: none !important;
+            /* force crisp text rendering */
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+            -webkit-text-stroke: 0.01px !important;
+            backface-visibility: hidden !important;
+            will-change: transform, opacity !important;
+        }
+
+        /* Allow CTA animation: do not disable pulsing for the CTA in the slider */
+        /* (Ensure only the button animates; headings remain static) */
+
         /* Forcer visibilité sur petits écrans : bouton et texte du slider */
         @media (max-width: 576px) {
             .cover-slides {
@@ -108,7 +144,12 @@
                 height: 100% !important;
                 width: 100% !important;
                 display: block !important;
-                position: relative !important;
+                /* Must be absolute for the slider JS to stack slides and animate */
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 overflow: hidden !important;
@@ -141,17 +182,41 @@
             }
 
             .cover-slides h1,
-            .cover-slides p,
-            .slide-in-left,
-            .delay-1,
-            .delay-2,
-            .delay-3 {
+                .cover-slides p,
+                .slide-in-left,
+                .delay-1,
+                .delay-2,
+                .delay-3 {
                 opacity: 1 !important;
                 transform: none !important;
                 filter: none !important;
                 visibility: visible !important;
                 z-index: 99999 !important;
             }
+
+            /* Mobile-specific adjustments for slider heading and CTA */
+            .cover-slides h1 { font-size: 1.6rem !important; line-height: 1.1 !important; margin: .25rem 0 !important; }
+            .cover-slides .m-b-20 { margin-bottom: .35rem !important; }
+            .cover-slides p { margin-top: .5rem !important; }
+            /* Ensure CTA is visible and blinking on mobile */
+            .cover-slides .btn-cta-commande.pulsing { animation: blink-cta 1.2s ease-in-out infinite !important; }
+            .cover-slides .btn-cta-commande { pointer-events: auto !important; }
+
+                /* Remove any animation on slide-in elements to make text and CTA fully static */
+                .cover-slides .slide-in-left,
+                .cover-slides .delay-1,
+                .cover-slides .delay-2,
+                .cover-slides .delay-3,
+                .cover-slides h1.slide-in-left,
+                .cover-slides p.slide-in-left {
+                    transform: none !important;
+                    opacity: 1 !important;
+                    animation: none !important;
+                    transition: none !important;
+                }
+
+                /* Keep CTA pulsing on mobile (we want it to blink) */
+                /* nothing to override here */
 
             .slides-container li .overlay-background {
                 z-index: 1 !important;
@@ -163,6 +228,11 @@
                 width: 100% !important;
                 z-index: 100000 !important;
             }
+        }
+
+        /* Respect user preference: reduce motion */
+        @media (prefers-reduced-motion: reduce) {
+            .btn-cta-commande.pulsing, .btn-cta-commande i { animation: none !important; }
         }
     </style>
 
@@ -294,7 +364,8 @@
                         <p class="text-muted">Nous assurons la livraison directe de vos produits agricoles frais à domicile,
                             au marché ou à votre restaurant.</p>
                         <div class="mt-auto text-end">
-                            <a href="#" class="text-success">En savoir plus &raquo;</a>
+                            <a href="#" class="text-success" data-bs-toggle="modal" data-bs-target="#livraisonModal"
+                                aria-label="En savoir plus sur Livraison rapide">En savoir plus &raquo;</a>
                         </div>
                     </div>
                 </div>
@@ -308,7 +379,8 @@
                         <p class="text-muted">Nous sélectionnons rigoureusement chaque produit pour assurer fraîcheur et
                             qualité supérieure.</p>
                         <div class="mt-auto text-end">
-                            <a href="#" class="text-success">En savoir plus &raquo;</a>
+                            <a href="#" class="text-success" data-bs-toggle="modal" data-bs-target="#qualiteModal"
+                                aria-label="En savoir plus sur Produits de qualité">En savoir plus &raquo;</a>
                         </div>
                     </div>
                 </div>
@@ -322,7 +394,8 @@
                         <p class="text-muted">Nous travaillons directement avec les producteurs pour garantir des prix
                             justes et une qualité optimale.</p>
                         <div class="mt-auto text-end">
-                            <a href="#" class="text-success">En savoir plus &raquo;</a>
+                            <a href="#" class="text-success" data-bs-toggle="modal" data-bs-target="#supportModal"
+                                aria-label="En savoir plus sur Support aux producteurs">En savoir plus &raquo;</a>
                         </div>
                     </div>
                 </div>
@@ -411,6 +484,115 @@
     @endpush
 
     <!-- Modal Ajouter au Panier -->
+    <!-- Modal Livraison Rapide -->
+    <div class="modal fade" id="livraisonModal" tabindex="-1" aria-labelledby="livraisonModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="livraisonModalLabel">Livraison rapide</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4 text-center">
+                            <img src="{{ asset('images/un-homme-africain-recolte-des-legumes.jpg') }}" alt="Livraison"
+                                class="img-fluid rounded">
+                        </div>
+                        <div class="col-md-8">
+                            <p>Nous offrons un service de livraison rapide et fiable adapté aux marchés locaux, restaurants
+                                et domiciles. Nos horaires sont conçus pour préserver la fraîcheur des produits :</p>
+                            <ul>
+                                <li>Délai standard : livraison le jour même dans la zone urbaine (selon horaire)</li>
+                                <li>Options express disponible selon disponibilité</li>
+                                <li>Suivi de commande par SMS et notification sur l'application</li>
+                                <li>Livraison sécurisée et réfrigérée si nécessaire</li>
+                            </ul>
+                            <p>Pour commander, cliquez ci-dessous et sélectionnez vos produits puis choisissez votre option
+                                de livraison.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <a href="{{ route('produits.allproduit') }}" class="btn btn-success">Commander maintenant</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Produits de Qualité -->
+    <div class="modal fade" id="qualiteModal" tabindex="-1" aria-labelledby="qualiteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="qualiteModalLabel">Produits de qualité</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4 text-center">
+                            <img src="{{ asset('images/IMG-20250219-WA0019.jpg') }}" alt="Qualité"
+                                class="img-fluid rounded">
+                        </div>
+                        <div class="col-md-8">
+                            <p>Chez Mourima Market, nous sélectionnons avec soin chaque produit en privilégiant :</p>
+                            <ul>
+                                <li>La fraîcheur et le goût</li>
+                                <li>Le respect des bonnes pratiques agricoles</li>
+                                <li>Le contrôle qualité avant expédition</li>
+                                <li>La traçabilité des lots</li>
+                            </ul>
+                            <p>Nos équipes travaillent quotidiennement avec les producteurs pour garantir des standards
+                                élevés et répondre aux besoins des clients professionnels et particuliers.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <a href="{{ route('produits.allproduit') }}" class="btn btn-success">Voir nos produits</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Support aux Producteurs -->
+    <div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="supportModalLabel">Support aux producteurs</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4 text-center">
+                            <img src="{{ asset('images/cover-octobre.jpg') }}" alt="Support producteurs"
+                                class="img-fluid rounded">
+                        </div>
+                        <div class="col-md-8">
+                            <p>Nous travaillons main dans la main avec les agriculteurs pour :</p>
+                            <ul>
+                                <li>Offrir des formations sur les bonnes pratiques agricoles</li>
+                                <li>Faciliter l’accès aux marchés</li>
+                                <li>Assurer des prix justes et une rémunération équitable</li>
+                                <li>Mettre en place des coopératives et soutenir la production locale</li>
+                            </ul>
+                            <p>Notre approche crée un cercle vertueux : des producteurs soutenus, des produits de qualité et
+                                des clients satisfaits.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <a href="{{ route('app_contact') }}" class="btn btn-success">Nous contacter</a>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">

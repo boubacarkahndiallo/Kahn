@@ -36,15 +36,25 @@ class ClientController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'tel' => 'required|string|max:20',
+            'tel_e164' => 'nullable|string|max:30',
+            'tel_e164' => 'nullable|string|max:30',
             'whatsapp' => 'nullable|string|max:20',
+            'whatsapp_e164' => 'nullable|string|max:30',
+            'whatsapp_e164' => 'nullable|string|max:30',
             'adresse' => 'nullable|string|max:255',
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'statut' => 'nullable|in:actif,inactif',
             'description' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
+        // Prefer E164 inputs if provided (client-side formatting)
+        $inputTel = $request->input('tel_e164') ?: $validated['tel'];
+        $inputWhatsapp = $request->input('whatsapp_e164') ?: ($validated['whatsapp'] ?? null);
+
         // Valider le téléphone
-        if (!$this->validatePhoneNumber($validated['tel'])) {
+        if (!$this->validatePhoneNumber($inputTel)) {
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -55,7 +65,7 @@ class ClientController extends Controller
         }
 
         // Normaliser le téléphone au format E164
-        $normalized_tel = $this->formatPhoneNumber($validated['tel']);
+        $normalized_tel = $this->formatPhoneNumber($inputTel);
         if (!$normalized_tel) {
             if ($request->ajax()) {
                 return response()->json([
@@ -88,6 +98,12 @@ class ClientController extends Controller
         // Statut par défaut
         $validated['statut'] = $validated['statut'] ?? 'actif';
 
+        // Normaliser et set whatsapp
+        if ($inputWhatsapp) {
+            $normalized_whatsapp = $this->formatPhoneNumber($inputWhatsapp);
+            $validated['whatsapp'] = $normalized_whatsapp ?: $inputWhatsapp;
+        }
+
         // Création du client
         $client = Client::create($validated);
 
@@ -107,6 +123,8 @@ class ClientController extends Controller
                     'tel' => $client->tel,
                     'whatsapp' => $client->whatsapp,
                     'adresse' => $client->adresse,
+                    'latitude' => $client->latitude,
+                    'longitude' => $client->longitude,
                     'statut' => $client->statut,
                     'description' => $client->description,
                     'image' => $client->image ? asset('storage/' . $client->image) : null,
@@ -143,6 +161,8 @@ class ClientController extends Controller
             'tel' => $client->tel,
             'whatsapp' => $client->whatsapp,
             'adresse' => $client->adresse,
+            'latitude' => $client->latitude,
+            'longitude' => $client->longitude,
             'statut' => $client->statut,
             'description' => $client->description,
             'image' => $client->image ? asset('storage/' . $client->image) : null,
@@ -182,14 +202,20 @@ class ClientController extends Controller
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'statut' => 'required|in:actif,inactif',
             'description' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
+        // Prefer E164 inputs if provided
+        $inputTel = $request->input('tel_e164') ?: $validated['tel'];
+        $inputWhatsapp = $request->input('whatsapp_e164') ?: ($validated['whatsapp'] ?? null);
+
         // Valider et normaliser le téléphone
-        if (!$this->validatePhoneNumber($validated['tel'])) {
+        if (!$this->validatePhoneNumber($inputTel)) {
             return back()->withErrors(['tel' => 'Numéro de téléphone invalide']);
         }
 
-        $normalized_tel = $this->formatPhoneNumber($validated['tel']);
+        $normalized_tel = $this->formatPhoneNumber($inputTel);
         if (!$normalized_tel) {
             return back()->withErrors(['tel' => 'Impossible de formater le numéro de téléphone']);
         }
@@ -202,6 +228,15 @@ class ClientController extends Controller
         }
 
         $validated['tel'] = $normalized_tel;
+
+        if ($inputWhatsapp) {
+            $normalizedWhatsapp = $this->formatPhoneNumber($inputWhatsapp);
+            if ($normalizedWhatsapp) {
+                $validated['whatsapp'] = $normalizedWhatsapp;
+            } else {
+                $validated['whatsapp'] = $inputWhatsapp;
+            }
+        }
 
         // Mise à jour de l'image
         if ($request->hasFile('image')) {
@@ -248,6 +283,8 @@ class ClientController extends Controller
             'tel' => $client->tel,
             'whatsapp' => $client->whatsapp,
             'adresse' => $client->adresse,
+            'latitude' => $client->latitude,
+            'longitude' => $client->longitude,
             'statut' => $client->statut,
             'description' => $client->description,
             'image' => $client->image ? asset('storage/' . $client->image) : null,
@@ -270,6 +307,8 @@ class ClientController extends Controller
             'tel' => $client->tel,
             'whatsapp' => $client->whatsapp,
             'adresse' => $client->adresse,
+            'latitude' => $client->latitude,
+            'longitude' => $client->longitude,
             'statut' => $client->statut,
             'description' => $client->description,
             'image' => $client->image ? asset('storage/' . $client->image) : null,

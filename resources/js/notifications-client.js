@@ -34,6 +34,34 @@ function showToast(title, message) {
     alert(title + '\n' + message);
 }
 
+async function refreshCounts() {
+    try {
+        const res = await fetch('/notifications/unread-count');
+        if (!res.ok) return;
+        const data = await res.json();
+        const headerCount = document.getElementById('notif-count');
+        const footerCount = document.getElementById('footer-notif-count');
+        if (headerCount) {
+            if (data.unread_count && data.unread_count > 0) {
+                headerCount.style.display = 'inline-block';
+                headerCount.textContent = data.unread_count;
+            } else {
+                headerCount.style.display = 'none';
+            }
+        }
+        if (footerCount) {
+            if (data.unread_count && data.unread_count > 0) {
+                footerCount.style.display = 'inline-block';
+                footerCount.textContent = data.unread_count;
+            } else {
+                footerCount.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.warn('Erreur rafraîchissement counts', e);
+    }
+}
+
 function initNotifications() {
     if (!window.Echo) {
         console.warn('Laravel Echo non initialisé. Les notifications en temps réel ne fonctionnent pas.');
@@ -47,6 +75,7 @@ function initNotifications() {
                 const title = 'Nouveau produit';
                 const msg = `${e.nom} — ${e.prix} GNF`;
                 showToast(title, msg);
+                refreshCounts();
                 // Optionnel: rafraîchir la liste de produits
             });
     } catch (e) {
@@ -60,6 +89,7 @@ function initNotifications() {
                 const title = 'Nouvelle commande';
                 const msg = `${e.numero} — ${e.prix_total} GNF de ${e.client_nom}`;
                 showToast(title, msg);
+                refreshCounts();
             });
     } catch (e) {
         console.warn('Erreur subscription admin-orders', e);
@@ -73,6 +103,7 @@ function initNotifications() {
                     const title = 'Votre commande';
                     const msg = `Commande ${e.numero} enregistrée (${e.prix_total} GNF)`;
                     showToast(title, msg);
+                    refreshCounts();
                 });
 
             window.Echo.private(`user.${window.authUser.id}.notifications`)
@@ -80,6 +111,7 @@ function initNotifications() {
                     const title = 'Nouvel article';
                     const msg = `${e.nom} disponible`;
                     showToast(title, msg);
+                    refreshCounts();
                 });
         } catch (e) {
             console.warn('Erreur subscription user notifications', e);

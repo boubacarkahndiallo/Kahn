@@ -255,6 +255,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Fonction pour afficher les informations du client
+    function querySelectorForForm(selector) {
+        if (clientForm) return clientForm.querySelector(selector) || document.querySelector(selector);
+        return document.querySelector(selector);
+    }
+
     function showClientInfo(payload) {
         if (clientForm) clientForm.style.display = 'none';
 
@@ -329,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (clientForm) clientForm.style.display = 'block';
                     try {
                         const setIf = (selector, value) => {
-                            const input = document.querySelector(selector);
+                            const input = querySelectorForForm(selector);
                             if (input) input.value = value || '';
                         }
                         setIf('#nom', client.nom);
@@ -367,10 +372,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 const clientData = JSON.parse(stored);
                 if (clientForm) clientForm.style.display = 'block';
                 if (clientInfoDiv) clientInfoDiv.style.display = 'none';
-                document.getElementById('nom').value = clientData.client.nom || '';
-                document.getElementById('tel').value = clientData.client.tel || '';
-                if (clientData.client.whatsapp) document.getElementById('whatsapp').value = clientData.client.whatsapp;
-                if (clientData.client.adresse) document.getElementById('adresse').value = clientData.client.adresse;
+                const nomInput = querySelectorForForm('#nom'); if (nomInput) nomInput.value = clientData.client.nom || '';
+                const telInput = querySelectorForForm('#tel'); if (telInput) telInput.value = clientData.client.tel || '';
+                const waInput = querySelectorForForm('#whatsapp'); if (waInput && clientData.client.whatsapp) waInput.value = clientData.client.whatsapp;
+                const addrInput = querySelectorForForm('#adresse'); if (addrInput && clientData.client.adresse) addrInput.value = clientData.client.adresse;
                 const setIf = (selector, value) => {
                     const input = clientForm.querySelector(selector);
                     if (input) input.value = value || '';

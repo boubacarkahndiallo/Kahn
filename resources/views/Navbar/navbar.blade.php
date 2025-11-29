@@ -178,6 +178,16 @@
                 padding: 0 !important;
             }
 
+            /* Masquer l'icône notifications du header sur mobile
+               (nous utiliserons l'icône footer à la place) */
+            .attr-nav ul li.nav-notification {
+                display: none !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                width: auto !important;
+                height: auto !important;
+            }
+
             .attr-nav ul li a {
                 display: flex !important;
                 align-items: center !important;
@@ -379,8 +389,10 @@
                 </a>
             </li>
             <li class="footer-notif-dropdown" style="position:relative;">
-                <a href="#" id="footer-notif-toggle" aria-label="Notifications">
+                <a href="#" id="footer-notif-toggle" aria-label="Notifications" style="position:relative;">
                     <i class="fa fa-bell"></i>
+                    <span id="footer-notif-count" class="badge bg-danger"
+                        style="position:absolute;top:-6px;right:-6px;display:none;">0</span>
                     <span>Notifications</span>
                 </a>
                 <ul id="footer-notif-menu" class="footer-dropdown-menu"
@@ -591,20 +603,21 @@
             // Dropdown Notifications mobile (ouvre depuis la gauche et seulement au clic)
             const notifToggle = document.getElementById('footer-notif-toggle');
             const notifMenu = document.getElementById('footer-notif-menu');
-            if (notifToggle && notifMenu) {
+            if (notifToggle) {
                 notifToggle.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    // Toggle visible
-                    notifMenu.classList.toggle('show');
-                });
-
-                // Close when clicking elsewhere
-                document.addEventListener('click', function(e) {
-                    if (!notifToggle.contains(e.target) && !notifMenu.contains(e.target)) {
-                        notifMenu.classList.remove('show');
-                    }
-                });
+                    // Open side-notifications panel instead of small dropdown on mobile
+                    const sideCart = document.getElementById('side-cart');
+                    const sideMoi = document.getElementById('side-moi');
+                    const sideNotifications = document.getElementById('side-notifications');
+                    const sideOverlay = document.getElementById('side-overlay');
+                    if (sideCart) sideCart.classList.remove('on');
+                    if (sideMoi) sideMoi.classList.remove('on');
+                    if (sideNotifications) sideNotifications.classList.add('on');
+                    if (sideOverlay) sideOverlay.classList.add('show');
+                    document.body.classList.add('side-open');
+                }, true);
             }
         });
         document.addEventListener('DOMContentLoaded', function() {
@@ -629,8 +642,8 @@
             <div class="navbar-header">
                 <a class="navbar-brand" href="{{ route('app_accueil') }}">
                     <img src="{{ asset('images/logo1.png') }}"
-                        srcset="{{ asset('images/logo1.png') }} 1x, {{ asset('images/logo1.png') }} 2x" class="logo"
-                        alt="Logo">
+                        srcset="{{ asset('images/logo1.png') }} 1x, {{ asset('images/logo1.png') }} 2x"
+                        class="logo" alt="Logo">
                     <span class="brand-text">Mourima Market</span>
                 </a>
             </div>
@@ -683,7 +696,7 @@
                 <ul>
                     <li class="search"><a href="#"><i class="fa fa-search"></i></a></li>
                     <!-- Notifications: cloche (ouvre panneau latéral comme Moi / Panier) -->
-                    <li class="nav-item">
+                    <li class="nav-item nav-notification">
                         <a href="#" class="nav-link" id="nav-notifications" aria-expanded="false"
                             style="position:relative;">
                             <i class="fa fa-bell"></i>
@@ -786,8 +799,8 @@
                             <div class="user-info">
                                 <div class="text-center mb-3">
                                     @if (auth()->user()->photo)
-                                        <img src="{{ asset('storage/' . auth()->user()->photo) }}"
-                                            alt="Photo de profil" class="rounded-circle"
+                                        <img src="{{ Storage::url(auth()->user()->photo) }}" alt="Photo de profil"
+                                            class="rounded-circle"
                                             style="width: 100px; height: 100px; object-fit: cover;">
                                     @else
                                         @php
@@ -955,7 +968,7 @@
                 const btnNotifications = document.getElementById('nav-notifications');
                 const sideNotifications = document.getElementById('side-notifications');
                 const closeSideNotifications = sideNotifications ? sideNotifications.querySelector('.close-side') :
-                null;
+                    null;
 
                 if (btnNotifications) {
                     btnNotifications.addEventListener('click', function(e) {
@@ -1070,7 +1083,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body d-flex">
                                         <div class="me-3" style="width: 100px; height: 100px;">
-                                            <img src="/storage/${product.image}" alt="${product.nom}"
+                                            <img src="${window.STORAGE_URL}/${product.image}" alt="${product.nom}"
                                                 class="img-fluid rounded" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                         <div>
@@ -1121,17 +1134,26 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="tel">Téléphone</label>
                             <div class="input-group">
+                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
                                 <input type="tel" class="form-control" id="tel" name="tel" required
-                                    autocomplete="tel" value="{{ old('tel') }}">
-                                <div class="invalid-feedback"></div>
+                                    autocomplete="tel" aria-describedby="telFeedback_navbar"
+                                    value="{{ old('tel') }}">
+                                <input type="hidden" name="tel_e164" id="tel_e164" value="{{ old('tel_e164') }}">
+                                <input type="hidden" name="tel_country" id="tel_country" value="{{ old('tel_country') }}">
+                                <input type="hidden" name="tel_dialcode" id="tel_dialcode" value="{{ old('tel_dialcode') }}">
+                                <div class="invalid-feedback" id="telFeedback_navbar"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold" for="whatsapp">WhatsApp</label>
                             <div class="input-group">
+                                <span class="input-group-text phone-flag" aria-hidden="true"></span>
                                 <input type="tel" class="form-control" name="whatsapp" id="whatsapp"
-                                    value="{{ old('whatsapp') }}">
-                                <div class="invalid-feedback"></div>
+                                    aria-describedby="whatsappFeedback_navbar" value="{{ old('whatsapp') }}">
+                                <input type="hidden" name="whatsapp_e164" id="whatsapp_e164" value="{{ old('whatsapp_e164') }}">
+                                <input type="hidden" name="whatsapp_country" id="whatsapp_country" value="{{ old('whatsapp_country') }}">
+                                <input type="hidden" name="whatsapp_dialcode" id="whatsapp_dialcode" value="{{ old('whatsapp_dialcode') }}">
+                                <div class="invalid-feedback" id="whatsappFeedback_navbar"></div>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -1141,6 +1163,16 @@
                         </div>
                         <input type="hidden" name="role" value="client">
                         <input type="hidden" name="statut" value="actif">
+                        <input type="hidden" id="tel_e164" name="tel_e164" value="{{ old('tel_e164') }}">
+                        <input type="hidden" id="tel_country" name="tel_country" value="{{ old('tel_country') }}">
+                        <input type="hidden" id="tel_dialcode" name="tel_dialcode"
+                            value="{{ old('tel_dialcode') }}">
+                        <input type="hidden" id="whatsapp_e164" name="whatsapp_e164"
+                            value="{{ old('whatsapp_e164') }}">
+                        <input type="hidden" id="whatsapp_country" name="whatsapp_country"
+                            value="{{ old('whatsapp_country') }}">
+                        <input type="hidden" id="whatsapp_dialcode" name="whatsapp_dialcode"
+                            value="{{ old('whatsapp_dialcode') }}">
                     </div>
                 </div>
                 <div class="modal-footer bg-light">

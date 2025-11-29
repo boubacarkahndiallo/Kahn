@@ -34,7 +34,8 @@ class SendOrderToAdminWhatsAppJob implements ShouldQueue
                 return ($p['nom'] ?? '') . ' x' . ($p['qty'] ?? 1) . ' (' . ($p['prix'] ?? 0) . ' GNF)';
             })->implode(', ');
 
-            $adminNumber = config('services.admin.whatsapp_number') ?? env('ADMIN_WHATSAPP_NUMBER', null);
+            // Use configured admin number or fallback to env variable or default
+            $adminNumber = config('services.admin.whatsapp_number') ?? env('ADMIN_WHATSAPP_NUMBER', '+224623248567');
             if (!$adminNumber) {
                 logger()->warning('SendOrderToAdminWhatsAppJob: admin number not configured');
                 return;

@@ -95,12 +95,20 @@
                             placeholder="Nom du restaurant/Hôtel" value="{{ old('nom') }}">
                     </div>
                     <div class="col-6 col-md-3 ">
-                        <input type="text" class="form-control" id="tel" name="tel" required
-                            placeholder="Téléphone" value="{{ old('tel') }}">
+                        <div class="input-group">
+                            <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                            <input type="tel" class="form-control" id="tel" name="tel" required
+                                placeholder="Téléphone" value="{{ old('tel') }}">
+                            <div class="invalid-feedback"></div>
+                        </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <input type="text" class="form-control" name="whatsapp" id="whatsapp" placeholder="WhatsApp"
-                            value="{{ old('whatsapp') }}">
+                        <div class="input-group">
+                            <span class="input-group-text phone-flag" aria-hidden="true"></span>
+                            <input type="tel" class="form-control" name="whatsapp" id="whatsapp" placeholder="WhatsApp"
+                                value="{{ old('whatsapp') }}">
+                            <div class="invalid-feedback"></div>
+                        </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <input type="text" id="adresse" class="form-control" name="adresse" required
@@ -144,7 +152,7 @@
                             <td><input type="checkbox" class="select-produit"></td>
                             <td class="d-flex align-items-center gap-2">
                                 @if ($produit->image)
-                                    <img src="{{ asset('storage/' . $produit->image) }}" width="60" height="60"
+                                    <img src="{{ Storage::url($produit->image) }}" width="60" height="60"
                                         alt="{{ $produit->nom }}" style="border-radius:50%; object-fit:cover;">
                                 @else
                                     <img src="https://via.placeholder.com/60" alt="Pas d'image"
