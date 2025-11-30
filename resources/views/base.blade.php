@@ -109,6 +109,7 @@
         // Fournit les URLs absolues pour les scripts côté client
         window.APP_URL = "{{ rtrim(config('app.url'), '/') }}";
         window.STORAGE_URL = window.APP_URL + '/storage';
+        window.ALL_PRODUIT_URL = "{{ route('produits.allproduit') }}";
     </script>
     {{-- Navbar --}}
     @include('Navbar.navbar')
@@ -150,6 +151,60 @@
     @endif
 
     @stack('scripts')
+    <!-- Intercept logout forms and redirect to all products page -->
+    <script>
+        (function() {
+            const target = '{{ route('produits.allproduit') }}';
+            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = tokenMeta ? tokenMeta.getAttribute('content') : '';
+
+            document.addEventListener('submit', function(e) {
+                const form = e.target;
+                if (!form || !form.action) return;
+                if (form.action.indexOf('/logout') === -1 && (form.getAttribute('action') || '').indexOf(
+                        '/logout') === -1) return;
+                // Only intercept POST logout
+                const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                if (method !== 'POST') return;
+                // Only redirect to products page if the logout is done by a client from the 'Moi' panel.
+                const isClientLogout = (typeof window.authUser !== 'undefined' && window.authUser && window
+                    .authUser.role === 'client') || (form.closest && (form.closest('#clientInfo') || form
+                    .closest('#client-info-content') || form.closest('#side-moi')));
+                if (!isClientLogout) {
+                    // Let other logout flows behave normally
+                    return;
+                }
+                e.preventDefault();
+                // Do AJAX logout and redirect to products page
+                fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams(new FormData(form)).toString()
+                    })
+                    .then(response => {
+                        try {
+                            localStorage.removeItem('clientInfo');
+                        } catch (e) {}
+                        try {
+                            localStorage.removeItem('authUser');
+                        } catch (e) {}
+                        // Always redirect to allproduit (user requested)
+                        window.location.href = target;
+                    })
+                    .catch(err => {
+                        console.warn('Logout failed via AJAX, fallback to form submit', err);
+                        // fallback: submit normally
+                        form.submit();
+                    });
+            }, {
+                capture: true
+            });
+        })();
+    </script>
 </body>
 
 </html>

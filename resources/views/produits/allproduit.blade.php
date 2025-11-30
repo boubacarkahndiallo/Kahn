@@ -136,8 +136,8 @@
                             <td><input type="checkbox" class="select-produit"></td>
                             <td class="d-flex align-items-center gap-2">
                                 @if ($produit->image)
-                                    <img src="{{ Storage::url($produit->image) }}" class="product-thumbnail"
-                                        alt="{{ $produit->nom }}">
+                                    <img src="{{ $produit->image ? asset('storage/' . $produit->image) : asset('images/logo1.png') }}"
+                                        class="product-thumbnail" alt="{{ $produit->nom }}">
                                 @else
                                     <img src="https://via.placeholder.com/60" alt="Pas d'image"
                                         class="product-thumbnail">

@@ -1084,6 +1084,7 @@
                                     <div class="card-body d-flex">
                                         <div class="me-3" style="width: 100px; height: 100px;">
                                             <img src="${window.STORAGE_URL}/${product.image}" alt="${product.nom}"
+                                                loading="lazy" onerror="this.onerror=null;this.src='{{ asset('images/logo1.png') }}';"
                                                 class="img-fluid rounded" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                         <div>

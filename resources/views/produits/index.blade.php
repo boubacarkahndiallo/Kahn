@@ -182,7 +182,8 @@
                             <td>{{ $key + 1 }}</td>
                             <td>
                                 @if ($produit->image)
-                                    <img src="{{ Storage::url($produit->image) }}" alt="Image {{ $produit->nom }}">
+                                    <img src="{{ $produit->image ? asset('storage/' . $produit->image) : asset('images/logo1.png') }}"
+                                        alt="Image {{ $produit->nom }}">
                                 @else
                                     <span class="text-muted">Pas d’image</span>
                                 @endif

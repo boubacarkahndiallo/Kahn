@@ -7,9 +7,7 @@
                     <div class="footer-top-box">
                         <h3>Horaires d'ouverture</h3>
                         <ul class="list-time">
-                            <li>Lundi - Vendredi: 08:00 à 18:00</li>
-                            <li>Samedi: 10:00 à 16:00</li>
-                            <li>Dimanche: <span>Fermé</span></li>
+                            <li>Tous les jours</li>
                         </ul>
                     </div>
                 </div>
@@ -38,7 +36,8 @@
                             <li><a href="#"><i class="fab fa-twitter" aria-hidden="true"></i></a></li>
                             <li><a href="#"><i class="fab fa-linkedin" aria-hidden="true"></i></a></li>
                             <li><a href="#"><i class="fab fa-instagram" aria-hidden="true"></i></a></li>
-                            <li><a href="#"><i class="fab fa-whatsapp" aria-hidden="true"></i></a></li>
+                            <li><a href="https://wa.me/224623248567"><i class="fab fa-whatsapp"
+                                        aria-hidden="true"></i></a></li>
                         </ul>
                     </div>
                 </div>
@@ -84,7 +83,7 @@
                             </li>
                             <li>
                                 <p><i class="fas fa-phone-square"></i>
-                                    <a href="tel:+224621554784">623248567</a> |
+                                    <a href="tel:+224623248567">623248567</a> |
                                     <a href="tel:+224628275329">628275329</a> |
                                     <a href="tel:+224611292909">611292909</a>
                                 </p>

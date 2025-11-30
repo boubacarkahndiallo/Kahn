@@ -1,3 +1,324 @@
+// Cleaned client.js — Consolidated, minimal, and syntactically-correct
+// Cleaned client.js — Consolidated, minimal, and syntactically-correct
+// Features: intl-tel-input initialization, client view/edit modals (fetch), edit/save with geolocation
+(function () {
+    'use strict';
+
+    function initIntl(el) {
+        if (!el || !window.intlTelInput) return null;
+        try {
+            if (el.dataset.itiInitialized) return null;
+            const iti = window.intlTelInput(el, {
+                separateDialCode: true,
+                initialCountry: 'gn',
+                preferredCountries: ['gn', 'sn', 'ci', 'ml'],
+                utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
+            });
+            el.dataset.itiInitialized = '1';
+            return iti;
+        } catch (err) { console.warn('initIntl error', err); return null; }
+    }
+
+    async function showClient(id) {
+        const voirModalBody = document.getElementById('voirClientContent');
+        if (!voirModalBody) return;
+        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        try {
+            const res = await fetch(`/clients/${id}/ajax-show`);
+            const client = await res.json();
+            if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+            const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+            voirModalBody.innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded" alt="Photo"/></div>
+                    <div class="col-md-8">
+                        <p><strong>Nom :</strong> ${client.nom}</p>
+                        <p><strong>Téléphone :</strong> ${client.tel}</p>
+                        <p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p>
+                        <p><strong>Adresse :</strong> ${client.adresse || '-'}</p>
+                        ${client.latitude && client.longitude ? `<p><strong>Coordonnées :</strong> ${client.latitude}, ${client.longitude}</p><p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank" rel="noopener">Voir sur Google Maps</a></p>` : ''}
+                        <p><strong>Statut :</strong> ${statut}</p>
+                        <p>${client.description || ''}</p>
+                    </div>
+                </div>`;
+            const voirModalEl = document.getElementById('voirClientModal');
+            if (voirModalEl && window.bootstrap) { const voirModal = new bootstrap.Modal(voirModalEl); voirModal.show(); }
+        } catch (err) { console.error('showClient error', err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
+
+    async function editClient(id) {
+        const editModalBody = document.getElementById('editClientContent');
+        if (!editModalBody) return;
+        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        try {
+            const res = await fetch(`/clients/${id}/ajax-edit`);
+            const client = await res.json();
+            if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+            editModalBody.innerHTML = `
+                <form id="editClientForm" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-4 text-center">
+                            <label class="form-label fw-bold">Photo</label>
+                            <div id="imageContainer" style="width:130px;height:130px;background:#f8f9fa;border-radius:50%;overflow:hidden;margin:auto;position:relative;">
+                                <img id="currentImage" src="${client.image || 'https://via.placeholder.com/130'}" class="w-100 h-100" style="object-fit:cover;" alt="Photo" />
+                                <input type="file" id="editImage" name="image" accept="image/*" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;" />
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Nom</label>
+                            <input type="text" id="editNom" class="form-control" value="${client.nom}" />
+                            <label class="form-label fw-bold mt-2">Téléphone</label>
+                            <input type="tel" id="editTel" class="form-control" value="${client.tel}" />
+                            <label class="form-label fw-bold mt-2">WhatsApp</label>
+                            <input type="tel" id="editWhatsapp" class="form-control" value="${client.whatsapp || ''}" />
+                            <label class="form-label fw-bold mt-2">Adresse</label>
+                            <div class="input-group">
+                                <input type="text" id="editAdresse" class="form-control" value="${client.adresse || ''}" />
+                                <button id="editDetectPositionBtn" class="btn btn-outline-secondary" type="button" title="Détecter position"><i class="fa fa-map-marker-alt"></i></button>
+                            </div>
+                            <input type="hidden" id="editLatitude" value="${client.latitude || ''}" />
+                            <input type="hidden" id="editLongitude" value="${client.longitude || ''}" />
+                            <div class="mt-3 text-end">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>`;
+
+            const inputImage = document.getElementById('editImage');
+            const currentImage = document.getElementById('currentImage');
+            if (inputImage && currentImage) {
+                inputImage.addEventListener('change', function (e) { if (e.target.files[0]) { const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(e.target.files[0]); } });
+            }
+
+            const elEditTel = document.getElementById('editTel');
+            const elEditWhatsapp = document.getElementById('editWhatsapp');
+            const itiEditTel = initIntl(elEditTel);
+            const itiEditWhatsapp = initIntl(elEditWhatsapp);
+
+            const editDetectBtn = document.getElementById('editDetectPositionBtn');
+            if (editDetectBtn) {
+                editDetectBtn.addEventListener('click', function () {
+                    if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
+                    editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                    navigator.geolocation.getCurrentPosition(async function (pos) {
+                        const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                        if (document.getElementById('editLatitude')) document.getElementById('editLatitude').value = lat;
+                        if (document.getElementById('editLongitude')) document.getElementById('editLongitude').value = lon;
+                        try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); const d = await r.json(); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (err) { console.warn(err); }
+                        editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                    }, function (err) { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
+                });
+            }
+
+            document.getElementById('saveClientBtn').addEventListener('click', function () {
+                const formData = new FormData(); formData.append('_method', 'PUT'); formData.append('nom', document.getElementById('editNom').value || '');
+                if (itiEditTel && itiEditTel.isValidNumber()) { formData.append('tel', itiEditTel.getNumber()); formData.append('tel_e164', itiEditTel.getNumber()); } else { formData.append('tel', document.getElementById('editTel').value || ''); }
+                if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { formData.append('whatsapp', itiEditWhatsapp.getNumber()); formData.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { formData.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
+                formData.append('adresse', document.getElementById('editAdresse').value || ''); formData.append('latitude', document.getElementById('editLatitude').value || ''); formData.append('longitude', document.getElementById('editLongitude').value || '');
+                if (inputImage && inputImage.files && inputImage.files[0]) formData.append('image', inputImage.files[0]);
+                fetch(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: formData })
+                    .then(r => r.json()).then(resp => { if (resp.success) { location.reload(); } else { alert(resp.message || 'Erreur'); } }).catch(e => { console.error(e); alert('Erreur'); });
+            });
+
+            const editModalEl = document.getElementById('editClientModal'); if (editModalEl && window.bootstrap) { const m = new bootstrap.Modal(editModalEl); m.show(); }
+        } catch (err) { console.error('editClient error', err); if (editModalBody) editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
+
+    // Attach view/edit buttons
+    document.addEventListener('click', function (e) {
+        const view = e.target.closest('.btn-view');
+        if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; }
+        const edit = e.target.closest('.btn-edit');
+        if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; }
+    });
+
+    // init add form very small block
+    document.addEventListener('DOMContentLoaded', function () {
+        const telEl = document.getElementById('tel');
+        const waEl = document.getElementById('whatsapp');
+        initIntl(telEl); initIntl(waEl);
+        const formAdd = document.getElementById('formAjoutClient');
+        if (formAdd) formAdd.addEventListener('submit', function () {
+            try {
+                const itiTel = telEl && telEl.dataset.itiInitialized ? window.intlTelInputGlobals.getInstance(telEl) : null;
+                const itiWa = waEl && waEl.dataset.itiInitialized ? window.intlTelInputGlobals.getInstance(waEl) : null;
+                if (itiTel && itiTel.isValidNumber()) { telEl.value = itiTel.getNumber(); const h = document.getElementById('tel_e164'); if (h) h.value = itiTel.getNumber(); }
+                if (itiWa && itiWa.isValidNumber()) { waEl.value = itiWa.getNumber(); const h2 = document.getElementById('whatsapp_e164'); if (h2) h2.value = itiWa.getNumber(); }
+            } catch (err) { console.warn('form submit e164 set', err); }
+        });
+    });
+
+})();
+// Cleaned client.js - single implementation for client modals, phone formatting & edit
+document.addEventListener('DOMContentLoaded', function () {
+    // Basic intl-tel-input init helper
+    function initIntl(el) {
+        if (!el || !window.intlTelInput) return null;
+        try {
+            if (el.dataset.itiInitialized) return null;
+            const iti = window.intlTelInput(el, {
+                separateDialCode: true,
+                initialCountry: 'gn',
+                preferredCountries: ['gn', 'sn', 'ci', 'ml'],
+                utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
+            });
+            el.dataset.itiInitialized = '1';
+            return iti;
+        } catch (err) {
+            console.warn('initIntl error', err);
+            return null;
+        }
+    }
+
+    const voirModalEl = document.getElementById('voirClientModal');
+    const voirModal = voirModalEl ? new bootstrap.Modal(voirModalEl) : null;
+    const voirModalBody = document.getElementById('voirClientContent');
+
+    const editModalEl = document.getElementById('editClientModal');
+    const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
+    const editModalBody = document.getElementById('editClientContent');
+
+    // Set E.164 on add form submit
+    const telEl = document.getElementById('tel');
+    const waEl = document.getElementById('whatsapp');
+    const formAdd = document.getElementById('formAjoutClient');
+    const itiTel = initIntl(telEl);
+    const itiWhatsapp = initIntl(waEl);
+    if (formAdd) {
+        formAdd.addEventListener('submit', function () {
+            try {
+                if (itiTel && itiTel.isValidNumber()) {
+                    telEl.value = itiTel.getNumber();
+                    const telHidden = document.getElementById('tel_e164'); if (telHidden) telHidden.value = itiTel.getNumber();
+                }
+                if (itiWhatsapp && itiWhatsapp.isValidNumber()) {
+                    waEl.value = itiWhatsapp.getNumber();
+                    const waHidden = document.getElementById('whatsapp_e164'); if (waHidden) waHidden.value = itiWhatsapp.getNumber();
+                }
+            } catch (err) { console.warn('formAdd submit handler error', err); }
+        });
+    }
+
+    // Display client in modal
+    async function showClient(id) {
+        if (!voirModalBody) return;
+        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        try {
+            const res = await fetch(`/clients/${id}/ajax-show`);
+            const client = await res.json();
+            if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+            const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+            voirModalBody.innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded" /></div>
+                    <div class="col-md-8">
+                        <p><strong>Nom :</strong> ${client.nom}</p>
+                        <p><strong>Téléphone :</strong> ${client.tel}</p>
+                        <p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p>
+                        <p><strong>Adresse :</strong> ${client.adresse || '-'}</p>
+                        ${client.latitude && client.longitude ? `<p><strong>Coordonnées :</strong> ${client.latitude}, ${client.longitude}</p><p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank" rel="noopener">Voir sur Google Maps</a></p>` : ''}
+                        <p><strong>Statut :</strong> ${statut}</p>
+                        <p>${client.description || ''}</p>
+                    </div>
+                </div>`;
+            if (voirModal) voirModal.show();
+        } catch (err) { console.error('showClient error', err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
+
+    // Edit client modal with preview, intl and save handler
+    async function editClient(id) {
+        if (!editModalBody) return;
+        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        try {
+            const res = await fetch(`/clients/${id}/ajax-edit`);
+            const client = await res.json();
+            if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+            editModalBody.innerHTML = `
+                <form id="editClientForm" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-4 text-center">
+                            <label class="form-label fw-bold">Photo</label>
+                            <div id="imageContainer" style="width:130px;height:130px;background:#f8f9fa;border-radius:50%;overflow:hidden;cursor:pointer;margin:auto;position:relative;">
+                                <img id="currentImage" src="${client.image || 'https://via.placeholder.com/130'}" class="w-100 h-100" style="object-fit:cover;" />
+                                <input type="file" id="editImage" name="image" accept="image/*" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;" />
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Nom</label>
+                            <input type="text" id="editNom" class="form-control" value="${client.nom}" />
+                            <label class="form-label fw-bold mt-2">Téléphone</label>
+                            <input type="tel" id="editTel" class="form-control" value="${client.tel}" />
+                            <label class="form-label fw-bold mt-2">WhatsApp</label>
+                            <input type="tel" id="editWhatsapp" class="form-control" value="${client.whatsapp || ''}" />
+                            <label class="form-label fw-bold mt-2">Adresse</label>
+                            <div class="input-group">
+                                <input type="text" id="editAdresse" class="form-control" value="${client.adresse || ''}" />
+                                <button id="editDetectPositionBtn" class="btn btn-outline-secondary" type="button"><i class="fa fa-map-marker-alt"></i></button>
+                            </div>
+                            <input type="hidden" id="editLatitude" value="${client.latitude || ''}" />
+                            <input type="hidden" id="editLongitude" value="${client.longitude || ''}" />
+                            <div class="mt-3 text-end">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>`;
+
+            const inputImage = document.getElementById('editImage');
+            const currentImage = document.getElementById('currentImage');
+            if (inputImage && currentImage) {
+                inputImage.addEventListener('change', function (e) {
+                    if (e.target.files[0]) {
+                        const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(e.target.files[0]);
+                    }
+                });
+            }
+
+            const elEditTel = document.getElementById('editTel');
+            const elEditWhatsapp = document.getElementById('editWhatsapp');
+            const itiEditTel = initIntl(elEditTel);
+            const itiEditWhatsapp = initIntl(elEditWhatsapp);
+
+            const editDetectBtn = document.getElementById('editDetectPositionBtn');
+            if (editDetectBtn) {
+                editDetectBtn.addEventListener('click', function () {
+                    if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
+                    editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                    navigator.geolocation.getCurrentPosition(async function (pos) {
+                        const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                        if (document.getElementById('editLatitude')) document.getElementById('editLatitude').value = lat;
+                        if (document.getElementById('editLongitude')) document.getElementById('editLongitude').value = lon;
+                        try {
+                            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+                            const d = await r.json(); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name;
+                        } catch (err) { console.warn(err); }
+                        editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                    }, function (err) { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
+                });
+            }
+
+            document.getElementById('saveClientBtn').addEventListener('click', function () {
+                const formData = new FormData(); formData.append('_method', 'PUT'); formData.append('nom', document.getElementById('editNom').value || '');
+                if (itiEditTel && itiEditTel.isValidNumber()) { formData.append('tel', itiEditTel.getNumber()); formData.append('tel_e164', itiEditTel.getNumber()); } else { formData.append('tel', document.getElementById('editTel').value || ''); }
+                if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { formData.append('whatsapp', itiEditWhatsapp.getNumber()); formData.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { formData.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
+                formData.append('adresse', document.getElementById('editAdresse').value || ''); formData.append('latitude', document.getElementById('editLatitude').value || ''); formData.append('longitude', document.getElementById('editLongitude').value || '');
+                if (inputImage && inputImage.files && inputImage.files[0]) formData.append('image', inputImage.files[0]);
+                fetch(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: formData })
+                    .then(r => r.json()).then(resp => { if (resp.success) { location.reload(); } else { alert(resp.message || 'Erreur'); } }).catch(e => { console.error(e); alert('Erreur'); });
+            });
+            if (editModal) editModal.show();
+        } catch (err) { console.error('editClient error', err); if (editModalBody) editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
+
+    // Attach to buttons
+    document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', function () { showClient(this.dataset.id); }));
+    document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', function () { editClient(this.dataset.id); }));
+});
+
+// End of client.js
 // public/js/client.js
 // Clean, single implementation for client page: intl-tel-input initialization, validation and E.164 handling
 
@@ -195,6 +516,87 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
     document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
 });
+// Ensure client info is shown above the product table if a client is connected (localStorage or server)
+document.addEventListener('DOMContentLoaded', function () {
+    const clientInfoContainer = document.getElementById('clientInfo');
+    const clientForm = document.getElementById('clientRegistrationForm');
+
+    if (!clientInfoContainer) return;
+
+    function renderClientInfo(payload) {
+        // normalize payload to { client: {...} }
+        let obj = payload && payload.client ? payload.client : (payload || {});
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
+        const nom = obj.nom || obj.prenom || 'Client';
+        const tel = obj.tel || obj.whatsapp || '-';
+        const whatsapp = obj.whatsapp || '-';
+        const adresse = obj.adresse || '-';
+
+        clientInfoContainer.innerHTML = `
+            <div class="alert alert-success">
+                <h4 class="mb-3">Informations du client</h4>
+                <div class="row g-2">
+                    <div class="col-md-3 col-6"><i class="fa fa-user me-2 text-success"></i> <span>${client.nom}</span></div>
+                    <div class="col-md-3 col-6"><i class="fa fa-phone me-2 text-success"></i> <span>${client.tel}</span></div>
+                    <div class="col-md-3 col-6"><i class="fab fa-whatsapp me-2 text-success"></i> <span>${client.whatsapp}</span></div>
+                    <div class="col-md-3 col-6"><i class="fa fa-map-marker me-2 text-success"></i> <span>${client.adresse}</span></div>
+                </div>
+                <div class="text-end mt-3">
+                    <button id="modifyBtnTop" class="btn btn-success btn-sm"><i class="fa fa-edit"></i> Modifier</button>
+                    <button id="logoutBtnTop" class="btn btn-danger btn-sm ms-2"><i class="fa fa-sign-out"></i> Déconnexion</button>
+                </div>
+            </div>`;
+
+        clientInfoContainer.style.display = 'block';
+        if (clientForm) clientForm.style.display = 'none';
+
+        // attach handlers
+        const modifyBtn = document.getElementById('modifyBtnTop');
+        if (modifyBtn) modifyBtn.onclick = function () {
+            // show form and prefill
+            if (clientForm) clientForm.style.display = 'block';
+            clientInfoContainer.style.display = 'none';
+            try {
+                const parsed = JSON.parse(localStorage.getItem('clientInfo'));
+                const c = parsed && parsed.client ? parsed.client : (parsed || {});
+                const setIf = (selector, value) => { const input = clientForm.querySelector(selector) || document.querySelector(selector); if (input) input.value = value || ''; };
+                setIf('#nom', c.nom || c.prenom || '');
+                setIf('#tel', c.tel || c.whatsapp || '');
+                setIf('#whatsapp', c.whatsapp || c.tel || '');
+                setIf('#adresse', c.adresse || '');
+            } catch (err) { console.warn('prefill error', err); }
+        };
+
+        const logoutBtn = document.getElementById('logoutBtnTop');
+        if (logoutBtn) logoutBtn.onclick = function () {
+            try { localStorage.removeItem('clientInfo'); } catch (e) { }
+            // let other scripts know
+            window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
+            // redirect to allproduit if available
+            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+        };
+    }
+
+    function clearClientInfo() {
+        clientInfoContainer.innerHTML = '';
+        clientInfoContainer.style.display = 'none';
+        if (clientForm) clientForm.style.display = 'block';
+    }
+
+    // If localStorage or server-side user exists, show info
+    const stored = localStorage.getItem('clientInfo');
+    if (stored) {
+        try { renderClientInfo(JSON.parse(stored)); } catch (e) { console.warn('parse clientInfo', e); }
+    } else if (typeof window.authUser !== 'undefined' && window.authUser !== null) {
+        try { renderClientInfo({ client: window.authUser }); } catch (e) { console.warn('render server user', e); }
+    }
+
+    // Listen for client change events
+    window.addEventListener('clientInfoChanged', function (e) {
+        if (!e.detail) { clearClientInfo(); return; }
+        renderClientInfo(e.detail);
+    });
+});
 // client.js — single clean version
 document.addEventListener('DOMContentLoaded', () => {
     const voirModal = new bootstrap.Modal(document.getElementById('voirClientModal'));
@@ -322,61 +724,43 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             editModal.show();
-        }).catch(e => { console.error(e); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; });
-  };
+            // async/await style used above; errors handled in try/catch
+        };
 
-// Table buttons
-document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
-document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
-});
-// client.js — Single clean file: modals, tel input and geolocation
-document.addEventListener('DOMContentLoaded', () => {
-    const voirModal = new bootstrap.Modal(document.getElementById('voirClientModal'));
-    const voirModalBody = document.getElementById('voirClientContent');
-    const editModal = new bootstrap.Modal(document.getElementById('editClientModal'));
-    const editModalBody = document.getElementById('editClientContent');
+        // Table buttons
+        document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
+        document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
+    });
+// (Removed duplicate code - kept the main single implementation above)
 
-    function initIntl(el) {
-        if (!el || !window.intlTelInput) return null;
-        if (el.dataset.itiInitialized) return null;
-        const iti = window.intlTelInput(el, {
-            separateDialCode: true,
-            initialCountry: 'gn',
-            preferredCountries: ['gn', 'sn', 'ci', 'ml'],
-            utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
-        });
-        el.dataset.itiInitialized = '1';
-        return iti;
-    }
+// init add form
+const telEl = document.getElementById('tel');
+const waEl = document.getElementById('whatsapp');
+const itiTel = initIntl(telEl);
+const itiWhatsapp = initIntl(waEl);
+const formAdd = document.getElementById('formAjoutClient');
+if (formAdd) {
+    formAdd.addEventListener('submit', () => {
+        try {
+            if (itiTel && itiTel.isValidNumber()) {
+                telEl.value = itiTel.getNumber();
+                const h = document.getElementById('tel_e164'); if (h) h.value = itiTel.getNumber();
+            }
+            if (itiWhatsapp && itiWhatsapp.isValidNumber()) {
+                waEl.value = itiWhatsapp.getNumber();
+                const h2 = document.getElementById('whatsapp_e164'); if (h2) h2.value = itiWhatsapp.getNumber();
+            }
+        } catch (e) { console.warn(e); }
+    });
+}
 
-    // init add form
-    const telEl = document.getElementById('tel');
-    const waEl = document.getElementById('whatsapp');
-    const itiTel = initIntl(telEl);
-    const itiWhatsapp = initIntl(waEl);
-    const formAdd = document.getElementById('formAjoutClient');
-    if (formAdd) {
-        formAdd.addEventListener('submit', () => {
-            try {
-                if (itiTel && itiTel.isValidNumber()) {
-                    telEl.value = itiTel.getNumber();
-                    const h = document.getElementById('tel_e164'); if (h) h.value = itiTel.getNumber();
-                }
-                if (itiWhatsapp && itiWhatsapp.isValidNumber()) {
-                    waEl.value = itiWhatsapp.getNumber();
-                    const h2 = document.getElementById('whatsapp_e164'); if (h2) h2.value = itiWhatsapp.getNumber();
-                }
-            } catch (e) { console.warn(e); }
-        });
-    }
-
-    function showClient(id) {
-        if (!voirModalBody) return;
-        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
-        fetch(`/clients/${id}/ajax-show`).then(r => r.json()).then(client => {
-            if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
-            const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
-            voirModalBody.innerHTML = `
+function showClient(id) {
+    if (!voirModalBody) return;
+    voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+    fetch(`/clients/${id}/ajax-show`).then(r => r.json()).then(client => {
+        if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+        voirModalBody.innerHTML = `
         <div class="row g-3">
           <div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div>
           <div class="col-md-8">
@@ -389,16 +773,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>${client.description || ''}</p>
           </div>
         </div>`;
-            voirModal.show();
-        }).catch(err => { console.error(err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; });
-    }
+        voirModal.show();
+    }).catch(err => { console.error(err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; });
+}
 
-    function editClient(id) {
-        if (!editModalBody) return;
-        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
-        fetch(`/clients/${id}/ajax-edit`).then(r => r.json()).then(client => {
-            if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
-            editModalBody.innerHTML = `
+function editClient(id) {
+    if (!editModalBody) return;
+    editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+    fetch(`/clients/${id}/ajax-edit`).then(r => r.json()).then(client => {
+        if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        editModalBody.innerHTML = `
         <form id="editClientForm" enctype="multipart/form-data">
           <div class="row g-3">
             <div class="col-md-4 text-center">
@@ -430,49 +814,49 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </form>`;
 
-            // image preview
-            const inputImage = document.getElementById('editImage');
-            const currentImage = document.getElementById('currentImage');
-            if (inputImage && currentImage) {
-                inputImage.addEventListener('change', (e) => {
-                    const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(f);
-                });
-            }
-
-            // init intl for edit inputs
-            const elEditTel = document.getElementById('editTel');
-            const elEditWhatsapp = document.getElementById('editWhatsapp');
-            const itiEditTel = initIntl(elEditTel);
-            const itiEditWhatsapp = initIntl(elEditWhatsapp);
-
-            // geolocation
-            const editDetectBtn = document.getElementById('editDetectPositionBtn');
-            if (editDetectBtn) {
-                editDetectBtn.addEventListener('click', () => {
-                    if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
-                    editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-                    navigator.geolocation.getCurrentPosition(async (pos) => {
-                        const lat = pos.coords.latitude, lon = pos.coords.longitude;
-                        document.getElementById('editLatitude').value = lat; document.getElementById('editLongitude').value = lon;
-                        try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); const d = await r.json(); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (e) { console.warn(e); }
-                        editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
-                    }, (err) => { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
-                });
-            }
-
-            // Save
-            document.getElementById('saveClientBtn').addEventListener('click', () => {
-                const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || '');
-                if (itiEditTel && itiEditTel.isValidNumber()) { f.append('tel', itiEditTel.getNumber()); f.append('tel_e164', itiEditTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); }
-                if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { f.append('whatsapp', itiEditWhatsapp.getNumber()); f.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
-                f.append('adresse', document.getElementById('editAdresse').value || ''); f.append('latitude', document.getElementById('editLatitude').value || ''); f.append('longitude', document.getElementById('editLongitude').value || '');
-                if (inputImage && inputImage.files && inputImage.files[0]) f.append('image', inputImage.files[0]);
-                fetch(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: f })
-                    .then(r => r.json()).then(resp => { if (resp.success) location.reload(); else alert(resp.message || 'Erreur'); }).catch(e => { console.error(e); alert('Erreur'); });
+        // image preview
+        const inputImage = document.getElementById('editImage');
+        const currentImage = document.getElementById('currentImage');
+        if (inputImage && currentImage) {
+            inputImage.addEventListener('change', (e) => {
+                const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(f);
             });
+        }
 
-            editModal.show();
-        }).catch(e => { console.error(e); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; });
+        // init intl for edit inputs
+        const elEditTel = document.getElementById('editTel');
+        const elEditWhatsapp = document.getElementById('editWhatsapp');
+        const itiEditTel = initIntl(elEditTel);
+        const itiEditWhatsapp = initIntl(elEditWhatsapp);
+
+        // geolocation
+        const editDetectBtn = document.getElementById('editDetectPositionBtn');
+        if (editDetectBtn) {
+            editDetectBtn.addEventListener('click', () => {
+                if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
+                editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+                    document.getElementById('editLatitude').value = lat; document.getElementById('editLongitude').value = lon;
+                    try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); const d = await r.json(); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (e) { console.warn(e); }
+                    editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                }, (err) => { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
+            });
+        }
+
+        // Save
+        document.getElementById('saveClientBtn').addEventListener('click', () => {
+            const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || '');
+            if (itiEditTel && itiEditTel.isValidNumber()) { f.append('tel', itiEditTel.getNumber()); f.append('tel_e164', itiEditTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); }
+            if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { f.append('whatsapp', itiEditWhatsapp.getNumber()); f.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
+            f.append('adresse', document.getElementById('editAdresse').value || ''); f.append('latitude', document.getElementById('editLatitude').value || ''); f.append('longitude', document.getElementById('editLongitude').value || '');
+            if (inputImage && inputImage.files && inputImage.files[0]) f.append('image', inputImage.files[0]);
+            fetch(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: f })
+                .then(r => r.json()).then(resp => { if (resp.success) location.reload(); else alert(resp.message || 'Erreur'); }).catch(e => { console.error(e); alert('Erreur'); });
+        });
+
+        editModal.show();
+        // async/await style used above; errors handled in try/catch
     }
 
     document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
@@ -1085,179 +1469,122 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                         editDetectBtn.disabled = true;
                         editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-                        /* Removed duplicate event listener and code */
-                                    <input type="text" id="editAdresse" class="form-control" value="${client.adresse || ''}">
-                                    <button id="editDetectPositionBtn" type="button" class="btn btn-outline-secondary" title="Détecter position"><i class="fa fa-map-marker-alt"></i></button>
-                                </div>
-                                <input type="hidden" id="editLatitude" name="latitude" value="${client.latitude || ''}">
-                                <input type="hidden" id="editLongitude" name="longitude" value="${client.longitude || ''}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold mt-2">Statut</label>
-                                <select id="editStatut" class="form-select">
-                                    <option value="actif" ${client.statut === 'actif' ? 'selected' : ''}>Actif</option>
-                                    <option value="inactif" ${client.statut === 'inactif' ? 'selected' : ''}>Inactif</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold mt-2">Description</label>
-                                <textarea id="editDescription" class="form-control">${client.description || ''}</textarea>
-                            </div>
-                        </div>
-                        <div class="mt-3 text-end">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                            <button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button>
-                        </div>
-                    </form > `;
-
-                // Prévisualisation image
-                const inputImage = document.getElementById('editImage');
-                const currentImage = document.getElementById('currentImage');
-                inputImage.addEventListener('change', e => {
-                    if (e.target.files[0]) {
-                        const reader = new FileReader();
-                        reader.onload = ev => currentImage.src = ev.target.result;
-                        reader.readAsDataURL(e.target.files[0]);
-                    }
-                });
-
-                // Sauvegarde
-                document.getElementById('saveClientBtn').onclick = function () {
-                    const formData = new FormData();
-                    formData.append('_method', 'PUT');
-                    formData.append('nom', document.getElementById('editNom').value);
-                    formData.append('tel', document.getElementById('editTel').value);
-                    formData.append('whatsapp', document.getElementById('editWhatsapp').value);
-                    formData.append('adresse', document.getElementById('editAdresse').value);
-                    formData.append('statut', document.getElementById('editStatut').value);
-                    // include coords if present
-                    const latVal = document.getElementById('editLatitude') ? document.getElementById('editLatitude').value : '';
-                    const lonVal = document.getElementById('editLongitude') ? document.getElementById('editLongitude').value : '';
-                    if (latVal) formData.append('latitude', latVal);
-                    if (lonVal) formData.append('longitude', lonVal);
-                    formData.append('description', document.getElementById('editDescription').value);
-                    if (inputImage.files[0]) formData.append('image', inputImage.files[0]);
-
-                    fetch(`/ clients / ${ id } `, {
-                        method: 'POST',
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
-                        body: formData
-                    })
-                        .then(res => res.json())
-                        .then(resp => {
-                            if (resp.success) {
-                                const row = document.getElementById('clientRow' + id);
-                                if (row) {
-                                    row.querySelector('td:nth-child(3)').textContent = document.getElementById('editNom').value;
-                                    row.querySelector('td:nth-child(4)').textContent = document.getElementById('editTel').value;
-                                    row.querySelector('td:nth-child(5)').textContent = document.getElementById('editWhatsapp').value;
-                                    row.querySelector('td:nth-child(6)').textContent = document.getElementById('editAdresse').value;
-                                    let statutHtml = document.getElementById('editStatut').value === 'actif'
-                                        ? '<span class="fw-bold text-success">Actif</span>'
-                                        : '<span class="fw-bold text-danger">Inactif</span>';
-                                    row.querySelector('td:nth-child(7)').innerHTML = statutHtml;
-                                    row.querySelector('td:nth-child(8)').textContent = document.getElementById('editDescription').value;
+                        // Removed duplicate HTML block (leftover) to keep the JS valid
+                        // Image preview
+                        const inputImage = document.getElementById('editImage');
+                        const currentImage = document.getElementById('currentImage');
+                        if (inputImage) {
+                            inputImage.addEventListener('change', e => {
+                                if (e.target.files[0]) {
+                                    const reader = new FileReader();
+                                    reader.onload = ev => currentImage.src = ev.target.result;
+                                    reader.readAsDataURL(e.target.files[0]);
                                 }
-                                editModal.hide();
-                                alert(resp.message || 'Client mis à jour avec succès.');
-                            } else {
-                                alert(resp.message || 'Erreur lors de la mise à jour');
-                            }
-                                        // === intl-tel-input initialization for 'add' form (static) ===
-                                        let itiTel = null, itiWhatsapp = null;
-                                        if (document.getElementById('tel')) {
-                                            itiTel = window.intlTelInput(document.getElementById('tel'), {
-                                                separateDialCode: true,
-                                                utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js',
-                                                initialCountry: 'gn',
-                                            });
-                                        }
-                                        if (document.getElementById('whatsapp')) {
-                                            itiWhatsapp = window.intlTelInput(document.getElementById('whatsapp'), {
-                                                separateDialCode: true,
-                                                utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js',
-                                                initialCountry: 'gn',
-                                            });
-                                        }
+                            });
 
-                                        // On add form submit, set E.164 values
-                                        const formAdd = document.getElementById('formAjoutClient');
-                                        if (formAdd) {
-                                            formAdd.addEventListener('submit', function (ev) {
-                                                if (itiTel && itiTel.isValidNumber()) {
-                                                    document.getElementById('tel').value = itiTel.getNumber();
-                                                    document.getElementById('tel_e164').value = itiTel.getNumber();
-                                                }
-                                                if (itiWhatsapp && itiWhatsapp.isValidNumber()) {
-                                                    document.getElementById('whatsapp').value = itiWhatsapp.getNumber();
-                                                    document.getElementById('whatsapp_e164').value = itiWhatsapp.getNumber();
-                                                }
-                                                // allow submit to continue
-                                            });
-                                        }
+                            // Sauvegarde
+                            document.getElementById('saveClientBtn').onclick = function () {
+                                const formData = new FormData();
+                                formData.append('_method', 'PUT');
+                                formData.append('nom', document.getElementById('editNom').value);
+                                formData.append('tel', document.getElementById('editTel').value);
+                                formData.append('whatsapp', document.getElementById('editWhatsapp').value);
+                                formData.append('adresse', document.getElementById('editAdresse').value);
+                                formData.append('statut', document.getElementById('editStatut').value);
+                                // include coords if present
+                                const latVal = document.getElementById('editLatitude') ? document.getElementById('editLatitude').value : '';
+                                const lonVal = document.getElementById('editLongitude') ? document.getElementById('editLongitude').value : '';
+                                if (latVal) formData.append('latitude', latVal);
+                                if (lonVal) formData.append('longitude', lonVal);
+                                formData.append('description', document.getElementById('editDescription').value);
+                                if (inputImage.files[0]) formData.append('image', inputImage.files[0]);
 
+                                fetch(`/clients/${id}`, {
+                                    method: 'POST',
+                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                                    body: formData
+                                })
+                                    .then(res => res.json())
+                                    .then(resp => {
+                                        if (resp.success) {
+                                            const row = document.getElementById('clientRow' + id);
+                                            if (row) {
+                                                row.querySelector('td:nth-child(3)').textContent = document.getElementById('editNom').value;
+                                                row.querySelector('td:nth-child(4)').textContent = document.getElementById('editTel').value;
+                                                row.querySelector('td:nth-child(5)').textContent = document.getElementById('editWhatsapp').value;
+                                                row.querySelector('td:nth-child(6)').textContent = document.getElementById('editAdresse').value;
+                                                let statutHtml = document.getElementById('editStatut').value === 'actif'
+                                                    ? '<span class="fw-bold text-success">Actif</span>'
+                                                    : '<span class="fw-bold text-danger">Inactif</span>';
+                                                row.querySelector('td:nth-child(7)').innerHTML = statutHtml;
+                                                row.querySelector('td:nth-child(8)').textContent = document.getElementById('editDescription').value;
+                                            }
+                                            editModal.hide();
+                                            alert(resp.message || 'Client mis à jour avec succès.');
+                                        } else {
+                                            alert(resp.message || 'Erreur lors de la mise à jour');
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        alert('Erreur lors de la mise à jour');
+                                    });
+                            };
+
+                            editModal.show();
+                        })
                         .catch(err => {
+                            editModalBody.innerHTML = '<p class="text-danger text-center">Erreur lors du chargement du client.</p>';
                             console.error(err);
-                            alert('Erreur lors de la mise à jour');
                         });
-                };
+                }
 
-                editModal.show();
-            })
-            .catch(err => {
-                editModalBody.innerHTML = '<p class="text-danger text-center">Erreur lors du chargement du client.</p>';
-                console.error(err);
-            });
-    }
+                // =========================
+                // Événements boutons Voir / Edit
+                // =========================
+                document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
+                document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
 
-    // =========================
-    // Événements boutons Voir / Edit
-    // =========================
-    document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
-    document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
-
-    // =========================
-    // Recherche en direct
-    // =========================
-    const searchInput = document.querySelector('input[name="search"]');
-    const tableRows = document.querySelectorAll('#clientTable tbody tr');
-    if (searchInput) {
-        searchInput.addEventListener('input', function () {
-            const val = this.value.toLowerCase();
-            tableRows.forEach(row => {
-                row.style.display = Array.from(row.querySelectorAll('td')).some(td => td.textContent.toLowerCase().includes(val)) ? '' : 'none';
-            });
-        });
-    }
-});
-
-                // Hook detect btn for edit modal
-                const editDetectBtn = document.getElementById('editDetectPositionBtn');
-                if (editDetectBtn) {
-                    editDetectBtn.addEventListener('click', function() {
-                        if (!navigator.geolocation) {
-                            alert('Géolocalisation non supportée par votre navigateur');
-                            return;
-                        }
-                        editDetectBtn.disabled = true;
-                        editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-                        navigator.geolocation.getCurrentPosition(async function(pos) {
-                            const lat = pos.coords.latitude;
-                            const lon = pos.coords.longitude;
-                            if (document.getElementById('editLatitude')) document.getElementById('editLatitude').value = lat;
-                            if (document.getElementById('editLongitude')) document.getElementById('editLongitude').value = lon;
-                            try {
-                                                        <input type="tel" id="editTel" class="form-control" value="${client.tel}" required>
-                                const d = await r.json();
-                                if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name;
-                            } catch (err) { console.warn('Reverse geocode failed', err); }
-                                                        <input type="tel" id="editWhatsapp" class="form-control" value="${client.whatsapp || ''}">
-                            editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
-                        }, function(err) {
-                            editDetectBtn.disabled = false;
-                            editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
-                            alert('Impossible d\'obtenir votre position: ' + (err.message || 'Erreur'));
-                        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+                // =========================
+                // Recherche en direct
+                // =========================
+                const searchInput = document.querySelector('input[name="search"]');
+                const tableRows = document.querySelectorAll('#clientTable tbody tr');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function () {
+                        const val = this.value.toLowerCase();
+                        tableRows.forEach(row => {
+                            row.style.display = Array.from(row.querySelectorAll('td')).some(td => td.textContent.toLowerCase().includes(val)) ? '' : 'none';
+                        });
                     });
                 }
+            });
+
+        // Hook detect btn for edit modal
+        const editDetectBtn = document.getElementById('editDetectPositionBtn');
+        if (editDetectBtn) {
+            editDetectBtn.addEventListener('click', function () {
+                if (!navigator.geolocation) {
+                    alert('Géolocalisation non supportée par votre navigateur');
+                    return;
+                }
+                editDetectBtn.disabled = true;
+                editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                navigator.geolocation.getCurrentPosition(async function (pos) {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    if (document.getElementById('editLatitude')) document.getElementById('editLatitude').value = lat;
+                    if (document.getElementById('editLongitude')) document.getElementById('editLongitude').value = lon;
+                    try {
+                        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+                        const d = await r.json();
+                        if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name;
+                    } catch (err) { console.warn('Reverse geocode failed', err); }
+                    editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                }, function (err) {
+                    editDetectBtn.disabled = false;
+                    editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                    alert('Impossible d\'obtenir votre position: ' + (err.message || 'Erreur'));
+                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+            });
+        }

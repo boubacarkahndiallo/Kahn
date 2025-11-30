@@ -67,7 +67,8 @@
                             <td>
                                 {{ $produit->nom }}<br>
                                 @if ($produit->image)
-                                    <img src="{{ Storage::url($produit->image) }}" width="60" alt="{{ $produit->nom }}">
+                                    <img src="{{ $produit->image ? asset('storage/' . $produit->image) : asset('images/logo1.png') }}"
+                                        width="60" alt="{{ $produit->nom }}">
                                 @else
                                     <img src="https://via.placeholder.com/60" alt="Pas d'image">
                                 @endif

@@ -28,6 +28,12 @@ class ProduitController extends Controller
             ->take(5)
             ->get();
 
+        // Ensure the image returned is a full URL so clients can use it directly
+        $produits->transform(function ($p) {
+            $p->image = $p->image ? Storage::url($p->image) : null;
+            return $p;
+        });
+
         return response()->json($produits);
     }
 
@@ -133,7 +139,7 @@ class ProduitController extends Controller
             'prix' => number_format($produit->prix, 2, ',', ' ') . ' GNF',
             'stock' => $produit->stock,
             'description' => $produit->description,
-            'image' => $produit->image,
+            'image' => $produit->image ? Storage::url($produit->image) : null,
         ]);
     }
 
@@ -152,7 +158,7 @@ class ProduitController extends Controller
             'prix' => $produit->prix,
             'stock' => $produit->stock,
             'description' => $produit->description,
-            'image' => $produit->image,
+            'image' => $produit->image ? Storage::url($produit->image) : null,
         ]);
     }
 

@@ -1064,6 +1064,24 @@
         const searchResults = document.getElementById('searchResults');
         let timeoutId;
 
+        // Helper: build a robust image URL for product.image coming from the server
+        function buildImageUrl(img) {
+            const fallback = '{{ asset('images/no-image.png') }}';
+            try {
+                if (!img) return fallback;
+                // Absolute URL or data URI => return as-is
+                if (/^\s*(https?:)?\/\//i.test(img) || img.startsWith('data:')) return img;
+                // Already contains /storage or storage/ => normalize
+                if (img.startsWith('/storage')) return window.APP_URL + img;
+                if (img.startsWith('storage/')) return window.APP_URL + '/' + img;
+                // Otherwise append to STORAGE_URL
+                return (window.STORAGE_URL || (window.APP_URL + '/storage')) + '/' + img;
+            } catch (e) {
+                console && console.warn && console.warn('buildImageUrl failed', e);
+                return fallback;
+            }
+        }
+
         searchInput.addEventListener('input', function() {
             clearTimeout(timeoutId);
 
@@ -1079,11 +1097,14 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.length > 0) {
-                                const html = data.map(product => `
+                                const html = data.map(product => {
+                                    const imageSrc = buildImageUrl(product.image);
+                                    return `
                                 <div class="card mb-2">
                                     <div class="card-body d-flex">
                                         <div class="me-3" style="width: 100px; height: 100px;">
-                                            <img src="${window.STORAGE_URL}/${product.image}" alt="${product.nom}"
+                                            <img src="${imageSrc}" alt="${product.nom}"
+                                                loading="lazy" onerror="this.onerror=null;this.src='{{ asset('images/logo1.png') }}';"
                                                 class="img-fluid rounded" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                         <div>
@@ -1093,7 +1114,8 @@
                                         </div>
                                     </div>
                                 </div>
-                            `).join('');
+                            `;
+                                }).join('');
                                 searchResults.innerHTML = html;
                             } else {
                                 searchResults.innerHTML =

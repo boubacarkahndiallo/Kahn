@@ -324,7 +324,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 logoutBtnEl.onclick = function () {
                     try { localStorage.clear(); } catch (e) { console.warn('localStorage clear failed', e); }
                     window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
-                    window.location.reload();
+                    try {
+                        if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL;
+                        else window.location.reload();
+                    } catch (e) { window.location.reload(); }
                 };
             }
 
@@ -361,6 +364,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (storedClientInfo) {
         const clientData = JSON.parse(storedClientInfo);
         showClientInfo(clientData);
+    } else if (typeof window.authUser !== 'undefined' && window.authUser !== null) {
+        // Fallback serveur : si l'utilisateur est authentifié côté serveur, utiliser ces infos
+        // pour afficher les informations du client côté UI. On normalise en { client: {...} }
+        try {
+            const payload = { client: window.authUser };
+            showClientInfo(payload);
+            // on garde aussi un enregistrement local pour que les autres scripts (panier, allproduit)
+            // détectent la présence du client et permettent l'achat sans nécessiter localStorage manuel
+            try { localStorage.setItem('clientInfo', JSON.stringify(payload)); } catch (e) { /* ignore */ }
+        } catch (err) {
+            console.warn('Erreur lors de la récupération du user serveur pour afficher client info', err);
+        }
     }
 
     // Gestion du bouton "Modifier" en haut de la page (si présent)

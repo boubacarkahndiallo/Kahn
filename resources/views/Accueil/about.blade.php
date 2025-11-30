@@ -60,21 +60,21 @@
             <div class="row my-5">
                 <div class="col-sm-6 col-lg-4">
                     <div class="service-block-inner">
-                        <h3>We are Trusted</h3>
+                        <h3>Qualité</h3>
                         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
                             labore et dolore magna aliqua. </p>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-4">
                     <div class="service-block-inner">
-                        <h3>We are Professional</h3>
+                        <h3>Respect des engagements</h3>
                         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
                             labore et dolore magna aliqua. </p>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-4">
                     <div class="service-block-inner">
-                        <h3>We are Expert</h3>
+                        <h3>Satisfaction client</h3>
                         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
                             labore et dolore magna aliqua. </p>
                     </div>
@@ -88,7 +88,7 @@
                     <div class="hover-team">
                         <div class="our-team"> <img src="images/img-2.jpg" alt="" />
                             <div class="team-content">
-                                <h3 class="title">Kahn</h3> <span class="post">Graphiste, Developpeur Web</span>
+                                <h3 class="title">Kahn</h3> <span class="post">Responsable IT</span>
                             </div>
                             <ul class="social">
                                 <li>
@@ -118,7 +118,7 @@
                     <div class="hover-team">
                         <div class="our-team"> <img src="images/img-2.jpg" alt="" />
                             <div class="team-content">
-                                <h3 class="title">Binta</h3> <span class="post">Web Developer</span>
+                                <h3 class="title">Binta</h3> <span class="post">Responsable de la production</span>
                             </div>
                             <ul class="social">
                                 <li>
@@ -148,7 +148,7 @@
                     <div class="hover-team">
                         <div class="our-team"> <img src="images/img-2.jpg" alt="" />
                             <div class="team-content">
-                                <h3 class="title">Sangaré</h3> <span class="post">Web Developer</span>
+                                <h3 class="title">Sangaré</h3> <span class="post">Responsable IT Adjoin</span>
                             </div>
                             <ul class="social">
                                 <li>
@@ -178,7 +178,7 @@
                     <div class="hover-team">
                         <div class="our-team"> <img src="images/img-2.jpg" alt="" />
                             <div class="team-content">
-                                <h3 class="title">Mariam</h3> <span class="post">Web Developer</span>
+                                <h3 class="title">Mariam</h3> <span class="post">R.A.F.A</span>
                             </div>
                             <ul class="social">
                                 <li>
