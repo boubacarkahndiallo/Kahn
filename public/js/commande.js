@@ -4,19 +4,19 @@ $(document).ready(function () {
     // Sauvegarde des options de produits pour clonage
     const produitsOptions = $('#produitsTableBody select.produitSelect:first').html();
 
-    // Attacher les événements à une ligne
+    // Attacher les événements à une ligne (idempotent: off() avant on() pour éviter doublons si script chargé deux fois)
     function attachRowListeners(row) {
-        row.find('.produitSelect').on('change', function () {
+        row.find('.produitSelect').off('change').on('change', function () {
             const prix = $(this).find(':selected').data('prix') || 0;
             row.find('.prixInput').val(prix);
             calculerTotalProduit(row);
             updatePrixTotal();
         });
-        row.find('.quantiteInput').on('input', function () {
+        row.find('.quantiteInput').off('input').on('input', function () {
             calculerTotalProduit(row);
             updatePrixTotal();
         });
-        row.find('.removeRow').on('click', function () {
+        row.find('.removeRow').off('click').on('click', function () {
             row.remove();
             updatePrixTotal();
         });
@@ -39,8 +39,12 @@ $(document).ready(function () {
         $('#prix_total').val(total);
     }
 
-    // Ajouter une nouvelle ligne produit
-    $('#addProduct').on('click', () => {
+    // Ajouter une nouvelle ligne produit (débinding d'abord pour éviter double binding si script importé 2x)
+    $('#addProduct').off('click').on('click', () => {
+        // Prevent rapid double-click from adding multiple rows
+        const btn = $('#addProduct');
+        btn.prop('disabled', true);
+        setTimeout(() => btn.prop('disabled', false), 200);
         const tbody = $('#produitsTableBody');
         const row = $(`
             <tr>
@@ -76,8 +80,8 @@ $(document).ready(function () {
         attachRowListeners($(this));
     });
 
-    // Soumission du formulaire de commande
-    $('#commandeForm').on('submit', function (e) {
+    // Soumission du formulaire de commande (débinding d'abord)
+    $('#commandeForm').off('submit').on('submit', function (e) {
         e.preventDefault();
         const form = this;
 

@@ -493,7 +493,7 @@
 
         // Helper: build a robust image URL for product.image coming from the server
         function buildImageUrl(img) {
-            const fallback = '{{ asset('images/no-image.png') }}';
+            const fallback = '{{ asset('images/logo1.png') }}';
             try {
                 if (!img) return fallback;
                 if (/^\s*(https?:)?\/\//i.test(img) || img.startsWith('data:')) return img;

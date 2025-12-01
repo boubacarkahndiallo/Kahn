@@ -30,10 +30,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     statutHtml = `<span class="fw-bold text-muted">${data.statut}</span>`;
                 }
 
+                const imageSrc = data.image || '/images/logo1.png';
                 voirModalBody.innerHTML = `
                     <div class="row g-3">
                         <div class="col-md-4 text-center">
-                            ${data.image ? `<img src="/storage/${data.image}" class="rounded w-100">` : '<span class="text-muted">Pas d’image</span>'}
+                            <img src="${imageSrc}" class="rounded w-100" onerror="this.onerror=null;this.src='/images/logo1.png'">
                         </div>
                         <div class="col-md-8">
                             <p><strong>Nom:</strong> ${data.nom}</p>
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="col-md-6 text-center">
                             <label class="form-label fw-bold">Image du produit</label>
                             <div id="imageContainer" style="width:130px; height:130px; background:#f8f9fa; border-radius:50%; overflow:hidden; cursor:pointer; margin:auto; position:relative;">
-                                <img id="currentImage" src="${data.image ? '/storage/' + data.image : 'https://via.placeholder.com/130'}" class="w-100 h-100" style="object-fit:cover;">
+                                <img id="currentImage" src="${data.image || '/images/logo1.png'}" class="w-100 h-100" style="object-fit:cover;" onerror="this.onerror=null;this.src='/images/logo1.png'">
                                 <input type="file" id="editImage" name="image" accept="image/*" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
                             </div>
                         </div>
@@ -152,6 +153,21 @@ document.addEventListener('DOMContentLoaded', function () {
                                         newStatut = `<span class="fw-bold text-success">Disponible</span>`;
                                     }
                                     row.querySelector('td:nth-child(7)').innerHTML = newStatut;
+                                }
+                                // If back-end returned an updated product object, update the displayed image too
+                                if (resp.produit) {
+                                    const updated = resp.produit;
+                                    if (row) {
+                                        try {
+                                            const imgEl = row.querySelector('td:nth-child(2) img');
+                                            if (imgEl && updated.image) imgEl.src = updated.image;
+                                        } catch (e) { }
+                                    }
+                                    // Also update any grid card images
+                                    try {
+                                        const gridCardImg = document.querySelector('[data-produit-id="' + id + '"] img.card-img-top');
+                                        if (gridCardImg && updated.image) gridCardImg.src = updated.image;
+                                    } catch (e) { }
                                 }
                                 editModal.hide();
                                 alert(resp.message);

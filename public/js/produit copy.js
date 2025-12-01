@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 voirModalBody.innerHTML = `
                     <div class="row g-3">
                         <div class="col-md-4 text-center">
-                            ${data.image ? `<img src="/storage/${data.image}" class="rounded w-100">` : '<span class="text-muted">Pas d’image</span>'}
+                            ${data.image ? `<img src="${window.buildStorageUrl(data.image)}" class="rounded w-100" loading="lazy" onerror="this.onerror=null;this.src='${window.buildStorageUrl('')}'">` : '<span class="text-muted">Pas d’image</span>'}
                         </div>
                         <div class="col-md-8">
                             <p><strong>Nom:</strong> ${data.nom}</p>

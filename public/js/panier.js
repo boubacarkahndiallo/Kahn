@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const inscriptionForm = document.getElementById('inscriptionForm'); // formulaire
     const inscriptionModal = document.getElementById('inscriptionModal'); // modal
     let produits = [];
+    let lastCommandeId = null; // conserver l'id de la dernière commande créée pour l'annulation
 
     // Si les éléments critiques n'existent pas (pas sur la page allproduit), on charge le panier depuis localStorage
     const produitTableExists = document.getElementById('produits-table') !== null;
@@ -117,7 +118,6 @@ document.addEventListener("DOMContentLoaded", function () {
         window.authUser = savedUser;
     }
 
-    const isLoggedIn = typeof window.authUser !== 'undefined' && window.authUser !== null;
     const user = window.authUser;
 
     // Fonction pour désactiver/activer les checkboxes et quantités selon l'état de connexion
@@ -126,7 +126,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const qtyInputs = document.querySelectorAll('.qty');
         const commanderBtn = document.querySelector('.btn-commander');
 
-        if (!isLoggedIn) {
+        const loggedNow = typeof window.authUser !== 'undefined' && window.authUser !== null;
+        if (!loggedNow) {
             // Désactiver les checkboxes et inputs
             checkboxes.forEach(checkbox => {
                 checkbox.disabled = true;
@@ -141,8 +142,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 commanderBtn.disabled = true;
                 commanderBtn.title = "Veuillez vous inscrire pour commander";
             }
-            // Vider le panier
+            // Vider le panier et les sélections
             localStorage.removeItem('selectedProducts');
+            localStorage.removeItem('panier');
             produits = [];
             updateSideCart();
         } else {
@@ -164,8 +166,45 @@ document.addEventListener("DOMContentLoaded", function () {
     // Appeler la fonction au chargement et après inscription/déconnexion
     updateProductSelectionState();
 
+    // Ensure that panier is empty when there is no connected user on initial load
+    try {
+        const loggedNow = (typeof window.authUser !== 'undefined' && window.authUser !== null) || (localStorage.getItem('clientInfo') !== null);
+        if (!loggedNow) {
+            localStorage.removeItem('panier');
+            localStorage.removeItem('selectedProducts');
+            produits = [];
+            updateSideCart();
+        }
+    } catch (e) { console.warn('Error while clearing panier on load', e); }
+
     // Observer les changements d'état de connexion
     window.addEventListener('authStateChanged', updateProductSelectionState);
+
+    // Clear panier on auth change / client change (logout)
+    window.addEventListener('clientInfoChanged', function (e) {
+        try {
+            if (!e.detail) {
+                localStorage.removeItem('panier');
+                localStorage.removeItem('selectedProducts');
+                produits = [];
+                updateSideCart();
+            }
+        } catch (err) { console.warn('clientInfoChanged handler error', err); }
+    });
+
+    // Multi-tab: if auth or client info changes in another tab, sync cart state
+    window.addEventListener('storage', function (e) {
+        try {
+            if (e.key === 'authUser' || e.key === 'clientInfo') {
+                updateProductSelectionState();
+            }
+            if (e.key === 'panier' && !e.newValue) {
+                // panier has been cleared in another tab
+                produits = [];
+                updateSideCart();
+            }
+        } catch (err) { console.warn('storage event handling error', err); }
+    });
 
     function updateSideCart() {
         // Vérifier que sideCartList existe
@@ -225,7 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const imageTag = tr.querySelector('td:nth-child(2) img');
                 const image = imageTag ? imageTag.src : 'https://via.placeholder.com/60';
                 const id = tr.dataset.id ?? tr.dataset.produitId ?? null;
-                produits.push({ id, nom, qty, prix, total, image });
+                produits.push({ id, produit_id: id ? parseInt(id) : null, nom, qty, prix, total, image });
             }
         });
         updateSideCart();
@@ -433,7 +472,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Construire payload JSON attendu par CommandeController
         const payload = {
             client_id: client_id,
-            produits: produits.map(p => ({ nom: p.nom, qty: p.qty, prix: p.prix, total: p.total })),
+            produits: produits.map(p => ({ produit_id: p.produit_id ?? (p.id ? parseInt(p.id) : null), nom: p.nom, qty: p.qty, prix: p.prix, total: p.total })),
             prix_total: produits.reduce((sum, p) => sum + p.total, 0),
             statut: 'en_cours'
         };
@@ -458,9 +497,26 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify(payload)
         })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
+            .then(async res => {
+                let data = null;
+                try { data = await res.json(); } catch (e) { data = null; }
+
+                if (!res.ok) {
+                    if (res.status === 422 && data && data.errors) {
+                        const errs = Object.values(data.errors).flat();
+                        showAlert('danger', errs.join('<br>'));
+                    } else if (data && data.message) {
+                        showAlert('danger', data.message);
+                    } else {
+                        showAlert('danger', 'Une erreur serveur est survenue lors de la création de la commande.');
+                    }
+                    // Bubble error to catch
+                    throw new Error('server error ' + res.status);
+                }
+
+                if (data && data.success) {
+                    // conserver l'id de la commande pour l'annuler éventuellement
+                    try { lastCommandeId = data.commande.id ?? null; } catch (e) { lastCommandeId = null; }
                     // Mettre à jour les informations de la facture
                     const clientInfoRaw = localStorage.getItem('clientInfo');
                     const client = clientInfoRaw ? JSON.parse(clientInfoRaw).client : window.authUser;
@@ -494,6 +550,42 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Afficher le modal
                     const factureModal = new bootstrap.Modal(document.getElementById('factureModal'));
                     factureModal.show();
+
+                    // Attacher gestion annulation commande si bouton présent
+                    const btnAnnuler = document.getElementById('btn-annuler-commande');
+                    if (btnAnnuler) {
+                        btnAnnuler.onclick = async function () {
+                            if (!lastCommandeId) {
+                                showAlert('warning', 'Aucune commande trouvée à annuler.');
+                                return;
+                            }
+                            if (!confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) return;
+                            try {
+                                const res = await fetch(`/commandes/${lastCommandeId}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                        'Accept': 'application/json'
+                                    }
+                                });
+                                let json = null;
+                                try { json = await res.json(); } catch (e) { json = null; }
+                                if (res.ok) {
+                                    showAlert('success', json && json.message ? json.message : 'Commande annulée avec succès.');
+                                    // vider le panier et mettre à jour
+                                    produits = [];
+                                    lastCommandeId = null;
+                                    updateSideCart();
+                                    factureModal.hide();
+                                } else {
+                                    showAlert('danger', json && json.message ? json.message : 'Erreur lors de l\'annulation de la commande.');
+                                }
+                            } catch (err) {
+                                console.error('Erreur annulation commande:', err);
+                                showAlert('danger', 'Impossible d\'annuler la commande (erreur réseau).');
+                            }
+                        };
+                    }
 
                     // Gestion de l'impression
                     document.getElementById('btn-imprimer-facture').onclick = function () {
@@ -559,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Mettre à jour l'affichage du panier sans décocher les éléments
                     syncFromTable();
                 } else {
-                    alert("Erreur lors de l’enregistrement de la commande.");
+                    showAlert('danger', data && data.message ? data.message : "Erreur lors de l’enregistrement de la commande.");
                 }
             })
             .catch(err => {
@@ -655,7 +747,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (e) {
                 clientInfoHtml = `<p>Erreur lecture informations client.</p>`;
             }
-        } else if (isLoggedIn && user) {
+        } else if (typeof window.authUser !== 'undefined' && window.authUser !== null && user) {
             clientInfoHtml = `
                 <p><strong>Nom :</strong> ${user.nom}</p>
                 <p><strong>Téléphone :</strong> ${user.tel ?? ''}</p>
@@ -825,7 +917,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         } catch (e) {
                             doc.text("Vous n'êtes pas connecté ou vos informations ne sont pas disponibles.", 10, y);
                         }
-                    } else if (typeof isLoggedIn !== 'undefined' && isLoggedIn && user) {
+                    } else if (typeof window.authUser !== 'undefined' && window.authUser !== null && user) {
                         const nom = user.nom || 'Non précisé';
                         const tel = user.tel || 'Non précisé';
                         const whatsapp = user.whatsapp || 'Non précisé';

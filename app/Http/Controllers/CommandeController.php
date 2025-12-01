@@ -455,15 +455,22 @@ class CommandeController extends Controller
      * @return \Illuminate\Http\RedirectResponse
      * @var string $id
      */
-    public function destroy(string $id): \Illuminate\Http\RedirectResponse
+    public function destroy(Request $request, string $id)
     {
         try {
             $commande = Commande::findOrFail($id);
             $commande->delete();
 
+            if ($request->wantsJson() || $request->ajax() || str_contains($request->header('Accept') ?? '', 'application/json')) {
+                return response()->json(['success' => true, 'message' => 'La commande a été annulée avec succès.']);
+            }
+
             return redirect()->route('commandes.index')
                 ->with('success', 'La commande a été supprimée avec succès ✅');
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax() || str_contains($request->header('Accept') ?? '', 'application/json')) {
+                return response()->json(['success' => false, 'message' => 'Une erreur est survenue lors de la suppression de la commande'], 500);
+            }
             return redirect()->route('commandes.index')
                 ->with('error', 'Une erreur est survenue lors de la suppression de la commande');
         }

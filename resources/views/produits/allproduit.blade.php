@@ -144,10 +144,6 @@
                                 @endif
                                 <div class="d-flex flex-column">
                                     <span class="fw-bold">{{ $produit->nom }}</span>
-                                    @if ($produit->categorie)
-                                        <span
-                                            class="badge bg-light text-success small mt-1">{{ $produit->categorie }}</span>
-                                    @endif
                                 </div>
                             </td>
                             <td>{{ number_format($produit->prix, 0, ',', ' ') }}</td>
@@ -282,6 +278,10 @@
                     </div>
 
                     <div>
+                        <button type="button" class="btn btn-danger me-2" id="btn-annuler-commande"
+                            title="Annuler la commande">
+                            <i class="fa fa-times me-1"></i> Annuler la commande
+                        </button>
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                             Fermer
                         </button>

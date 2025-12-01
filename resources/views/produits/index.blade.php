@@ -20,11 +20,39 @@
 
     <!-- Header + Boutons -->
     <div class="container mt-4">
+        <style>
+            .product-thumbnail {
+                width: 60px;
+                height: 60px;
+                object-fit: cover;
+            }
+
+            /* Grid card tweaks */
+            .product-grid .card {
+                transition: transform .15s ease;
+            }
+
+            .product-grid .card:hover {
+                transform: translateY(-6px);
+            }
+
+            .toggle-area .btn.active {
+                background: #1c911e !important;
+                color: #fff !important;
+            }
+
+            #btnGridView.btn.active,
+            #btnListView.btn.active {
+                background: #1c911e !important;
+                color: #fff !important;
+            }
+        </style>
         <div class="row align-items-center mb-4 p-3 rounded shadow-sm"
             style="background:white; border-left:5px solid #1c911e;">
             <div class="col-md-4 d-flex align-items-center gap-2">
                 <i class="fa fa-box fa-2x" style="color:#070a23;"></i>
                 <h2 class="mb-0 fw-bold" style="color:#070a23;">Liste des Produits</h2>
+                <small class="text-muted ms-2">{{ $produits->count() }} produits</small>
             </div>
             <div class="col-md-4">
                 <form method="GET" action="{{ route('produits.index') }}">
@@ -36,14 +64,45 @@
                         </button>
                     </div>
                 </form>
+                @php
+                    // Ensure categories are available even on filtered results
+                    $categories = $produits->pluck('categorie')->filter()->unique()->sort()->values();
+                @endphp
+                <form method="GET" action="{{ route('produits.index') }}" class="mt-2">
+                    <div class="input-group">
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                        <select name="categorie" class="form-select">
+                            <option value="">Toutes les catégories</option>
+                            @foreach ($categories as $cat)
+                                <option value="{{ $cat }}" @if (request('categorie') == $cat) selected @endif>
+                                    {{ $cat }}</option>
+                            @endforeach
+                        </select>
+                        <button class="btn btn-outline-secondary" type="submit">Filtrer</button>
+                    </div>
+                </form>
             </div>
-            <div class="col-md-4 text-end">
+            <div class="col-md-4 text-end d-flex justify-content-end align-items-center gap-2">
                 <button type="button" class="btn fw-bold shadow-sm" style="background:#1c911e; color:white;"
                     data-bs-toggle="modal" data-bs-target="#ajoutProduitModal">
                     <i class="fa fa-plus me-1"></i> Ajouter un produit
                 </button>
+                <div class="btn-group ms-2" role="group" aria-label="View toggle">
+                    <button id="btnListView" class="btn btn-sm btn-outline-secondary" title="Liste"><i
+                            class="fa fa-list"></i></button>
+                    <button id="btnGridView" class="btn btn-sm btn-outline-secondary" title="Grille"><i
+                            class="fa fa-th"></i></button>
+                </div>
             </div>
         </div>
+        {{-- Flash messages like client index --}}
+        @if (session('success'))
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="alert alert-success">{{ session('success') }}</div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <!-- Modal Ajout Produit -->
@@ -161,74 +220,119 @@
 
     <!-- Tableau Produits -->
     <div class="container-fluid px-4 mt-4">
-        <div class="table-main table-responsive rounded shadow-sm" style="overflow-x:auto;">
-            <table id="produitTable" class="table align-middle mb-0 text-center w-100">
-                <thead>
-                    <tr>
-                        <th class="sortable">N°</th>
-                        <th>Image</th>
-                        <th class="sortable">Nom</th>
-                        <th class="sortable">Catégorie</th>
-                        <th class="sortable">Prix</th>
-                        <th class="sortable">Stock</th>
-                        <th>Statut</th>
-                        <th>Description</th>
-                        <th style="width:180px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($produits as $key => $produit)
-                        <tr id="produitRow{{ $produit->id }}">
-                            <td>{{ $key + 1 }}</td>
-                            <td>
-                                @if ($produit->image)
-                                    <img src="{{ $produit->image ? asset('storage/' . $produit->image) : asset('images/logo1.png') }}"
-                                        alt="Image {{ $produit->nom }}">
-                                @else
-                                    <span class="text-muted">Pas d’image</span>
-                                @endif
-                            </td>
-                            <td>{{ $produit->nom }}</td>
-                            <td>{{ $produit->categorie }}</td>
-                            <td>{{ number_format($produit->prix, 2, ',', ' ') }} GNF</td>
-                            <td>{{ $produit->stock }}</td>
-                            <td>
-                                @if ($produit->stock >= 0 && $produit->stock <= 5)
-                                    <span class="fw-bold text-danger">Rupture</span>
-                                @elseif ($produit->stock >= 6 && $produit->stock <= 10)
-                                    <span class="fw-bold text-warning">Presque fini</span>
-                                @else
-                                    <span class="fw-bold text-success">Disponible</span>
-                                @endif
-                            </td>
-                            <td>{{ Str::limit($produit->description, 50) }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-view" data-id="{{ $produit->id }}" data-bs-toggle="modal"
-                                    data-bs-target="#voirProduitModal" style="color:#070a23;">
-                                    <i class="fa fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-edit" data-id="{{ $produit->id }}" data-bs-toggle="modal"
-                                    data-bs-target="#editProduitModal" style="color:#1c911e;">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-                                <form action="{{ route('produits.destroy', $produit->id) }}" method="POST"
-                                    style="display:inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm" style="color:red;"
-                                        onclick="return confirm('Voulez-vous vraiment supprimer {{ $produit->nom }} ?')">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
+        <div id="productListContainer">
+            <div class="table-main table-responsive rounded shadow-sm" style="overflow-x:auto;" id="listView">
+                <table id="produitTable" class="table align-middle mb-0 text-center w-100">
+                    <thead>
                         <tr>
-                            <td colspan="9" class="text-center text-muted">Aucun produit enregistré</td>
+                            <th class="sortable">N°</th>
+                            <th>Image</th>
+                            <th class="sortable">Nom</th>
+                            <th class="sortable">Catégorie</th>
+                            <th class="sortable">Prix</th>
+                            <th class="sortable">Stock</th>
+                            <th>Statut</th>
+                            <th>Description</th>
+                            <th style="width:180px;">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($produits as $key => $produit)
+                            <tr id="produitRow{{ $produit->id }}">
+                                <td>{{ $key + 1 }}</td>
+                                <td>
+                                    @if ($produit->image)
+                                        <img src="{{ asset('storage/' . $produit->image) }}"
+                                            alt="Image {{ $produit->nom }}" class="product-thumbnail img-fluid rounded"
+                                            loading="lazy"
+                                            onerror="this.onerror=null;this.src='{{ asset('images/logo1.png') }}';">
+                                    @else
+                                        <img src="{{ asset('images/logo1.png') }}" alt="Pas d'image"
+                                            class="product-thumbnail img-fluid rounded">
+                                    @endif
+                                </td>
+                                <td>{{ $produit->nom }}</td>
+                                <td>{{ $produit->categorie }}</td>
+                                <td>{{ number_format($produit->prix, 2, ',', ' ') }} GNF</td>
+                                <td>{{ $produit->stock }}</td>
+                                <td>
+                                    @if ($produit->stock >= 0 && $produit->stock <= 5)
+                                        <span class="fw-bold text-danger">Rupture</span>
+                                    @elseif ($produit->stock >= 6 && $produit->stock <= 10)
+                                        <span class="fw-bold text-warning">Presque fini</span>
+                                    @else
+                                        <span class="fw-bold text-success">Disponible</span>
+                                    @endif
+                                </td>
+                                <td>{{ Str::limit($produit->description, 50) }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-view" data-id="{{ $produit->id }}"
+                                        data-bs-toggle="modal" data-bs-target="#voirProduitModal" style="color:#070a23;">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-edit" data-id="{{ $produit->id }}"
+                                        data-bs-toggle="modal" data-bs-target="#editProduitModal" style="color:#1c911e;">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <form action="{{ route('produits.destroy', $produit->id) }}" method="POST"
+                                        style="display:inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm" style="color:red;"
+                                            onclick="return confirm('Voulez-vous vraiment supprimer {{ $produit->nom }} ?')">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="text-center text-muted">Aucun produit enregistré</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div id="gridView" class="row g-3" style="display:none;">
+                @foreach ($produits as $produit)
+                    <div class="col-6 col-sm-4 col-md-3" data-produit-id="{{ $produit->id }}">
+                        <div class="card h-100 shadow-sm">
+                            @if ($produit->image)
+                                <img src="{{ asset('storage/' . $produit->image) }}" class="card-img-top"
+                                    alt="{{ $produit->nom }}" style="object-fit:cover; height:160px;" loading="lazy"
+                                    onerror="this.onerror=null;this.src='{{ asset('images/logo1.png') }}';">
+                            @else
+                                <img src="{{ asset('images/logo1.png') }}" class="card-img-top"
+                                    alt="{{ $produit->nom }}" style="object-fit:cover; height:160px;">
+                            @endif
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title fw-bold">{{ $produit->nom }}</h6>
+                                <p class="mb-1 small text-muted">{{ $produit->categorie }}</p>
+                                <p class="mb-2 fw-bold">{{ number_format($produit->prix, 2, ',', ' ') }} GNF</p>
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    <div>
+                                        @if ($produit->stock >= 0 && $produit->stock <= 5)
+                                            <span class="badge bg-danger">Rupture</span>
+                                        @elseif ($produit->stock >= 6 && $produit->stock <= 10)
+                                            <span class="badge bg-warning text-dark">Presque fini</span>
+                                        @else
+                                            <span class="badge bg-success">Disponible</span>
+                                        @endif
+                                    </div>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" data-id="{{ $produit->id }}"
+                                            data-bs-toggle="modal" data-bs-target="#voirProduitModal"><i
+                                                class="fa fa-eye"></i></button>
+                                        <button class="btn btn-sm btn-outline-success" data-id="{{ $produit->id }}"
+                                            data-bs-toggle="modal" data-bs-target="#editProduitModal"><i
+                                                class="fa fa-edit"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
     </div>
 
@@ -266,6 +370,44 @@
                     rows.forEach(row => tableBody.appendChild(row));
                 });
             });
+
+            // Toggle between grid and list view
+            const btnGrid = document.getElementById('btnGridView');
+            const btnList = document.getElementById('btnListView');
+            const listView = document.getElementById('listView');
+            const gridView = document.getElementById('gridView');
+
+            function setView(view) {
+                if (view === 'grid') {
+                    listView.style.display = 'none';
+                    gridView.style.display = 'flex';
+                    localStorage.setItem('produitView', 'grid');
+                } else {
+                    listView.style.display = '';
+                    gridView.style.display = 'none';
+                    localStorage.setItem('produitView', 'list');
+                }
+            }
+
+            btnGrid.addEventListener('click', function() {
+                setView('grid');
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+            });
+            btnList.addEventListener('click', function() {
+                setView('list');
+                btnList.classList.add('active');
+                btnGrid.classList.remove('active');
+            });
+
+            // Load saved view
+            const savedView = localStorage.getItem('produitView') || 'list';
+            setView(savedView);
+            if (savedView === 'grid') {
+                btnGrid.classList.add('active');
+            } else {
+                btnList.classList.add('active');
+            }
         });
     </script>
 @endsection

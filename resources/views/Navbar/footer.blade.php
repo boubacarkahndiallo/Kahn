@@ -147,7 +147,6 @@
 <script src="js/custom.js"></script>
 <script src="js/produit-register.js"></script>
 {{-- mes AJAX --}}
-<script src="js/commande.js"></script>
 <script src="js/client.js"></script>
 <script src="js/allproduit.js"></script>
 <script src="js/panier.js"></script>

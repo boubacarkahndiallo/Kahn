@@ -103,7 +103,10 @@ document.addEventListener("DOMContentLoaded", function () {
         formFilled = (nomVal !== '' && telVal !== '');
     }
 
-    const isLoggedIn = clientInfo !== null || (typeof window.authUser !== 'undefined' && window.authUser !== null) || formFilled;
+    function getIsLoggedIn() {
+        try { if (localStorage.getItem('clientInfo')) return true; } catch (e) { }
+        return (typeof window.authUser !== 'undefined' && window.authUser !== null) || formFilled;
+    }
 
 
     // Écouter l'événement personnalisé disparé lors de la connexion/déconnexion

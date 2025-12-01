@@ -223,6 +223,7 @@
                     <button type="button" class="btn btn-warning" id="btn-download-pdf"><i class="fa fa-file-pdf me-1"></i> PDF</button>
                     <button type="button" class="btn btn-success" id="btn-print-facture"><i class="fa fa-print me-1"></i> </button>
                 </div>
+                <button type="button" class="btn btn-danger me-2" id="btn-annuler-commande-nav" title="Annuler la commande">Annuler la commande</button>
                 <button type="button" class="btn btn-danger text-light" data-bs-dismiss="modal">Fermer</button>
             </div>
         </div>
@@ -237,6 +238,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const cartCount = document.getElementById('cart-count');
     const inscriptionForm = document.getElementById('inscriptionForm');
     let produits = [];
+    let lastCommandeId = null;
 
     function updateSideCart() {
         sideCartList.querySelectorAll('li:not(.total)').forEach(li => li.remove());
@@ -287,7 +289,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 const total = prix * qty;
                 const imageTag = tr.querySelector('td:nth-child(2) img');
                 const image = imageTag ? imageTag.src : 'https://via.placeholder.com/60';
-                produits.push({ nom, qty, prix, total, image });
+                const id = tr.dataset.id ?? tr.dataset.produitId ?? null;
+                produits.push({ id, produit_id: id ? parseInt(id) : null, nom, qty, prix, total, image });
             }
         });
         updateSideCart();
@@ -325,9 +328,9 @@ document.addEventListener("DOMContentLoaded", function () {
             btnConfirmer.className = "btn btn-success w-100 mt-2";
             btnConfirmer.textContent = "Confirmer la commande";
 
-            btnConfirmer.addEventListener('click', function (e) {
+                btnConfirmer.addEventListener('click', function (e) {
                 e.preventDefault();
-                const isLoggedIn = @json(auth()->check());
+                const isLoggedIn = (typeof window.authUser !== 'undefined' && window.authUser !== null) || !!localStorage.getItem('clientInfo');
                 if (!isLoggedIn) {
                     const modal = new bootstrap.Modal(document.getElementById('inscriptionModal'));
                     modal.show();
@@ -340,7 +343,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    function envoyerCommande(client_id = @json(auth()->check() ? auth()->user()->id : null)) {
+    function envoyerCommande(client_id) {
+        if (typeof client_id === 'undefined' || client_id === null) {
+            client_id = (typeof window.authUser !== 'undefined' && window.authUser !== null) ? window.authUser.id : null;
+            try { if (!client_id) { const parsed = JSON.parse(localStorage.getItem('clientInfo')); if (parsed && parsed.client && parsed.client.id) client_id = parsed.client.id; } } catch (e) { }
+        }
         const formData = new FormData();
         formData.append('produits', JSON.stringify(produits));
         formData.append('prix_total', produits.reduce((sum, p) => sum + p.total, 0));
@@ -355,11 +362,38 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(data => {
             if (data.success) {
                 alert("Commande enregistrée avec succès !");
+                // conserver l'id
+                try { lastCommandeId = data.commande.id ?? null; } catch (e) { lastCommandeId = null; }
                 document.getElementById('btn-confirmer-panier')?.remove();
                 produits = [];
                 updateSideCart();
                 const modalInstance = bootstrap.Modal.getInstance(document.getElementById('inscriptionModal'));
                 if (modalInstance) modalInstance.hide();
+                // Wire cancel button in the 'Voir Commande' modal
+                const btnAnnulerNav = document.getElementById('btn-annuler-commande-nav');
+                if (btnAnnulerNav) {
+                    btnAnnulerNav.onclick = async function () {
+                        if (!lastCommandeId) { alert('Aucune commande trouvée à annuler.'); return; }
+                        if (!confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) return;
+                        try {
+                            const res = await fetch(`/commandes/${lastCommandeId}`, {
+                                method: 'DELETE',
+                                headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}", 'Accept': 'application/json' }
+                            });
+                            let json = null; try { json = await res.json(); } catch (e) { json = null; }
+                            if (res.ok) {
+                                alert(json && json.message ? json.message : 'Commande annulée avec succès.');
+                                produits = [];
+                                lastCommandeId = null;
+                                updateSideCart();
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('voirCommandeModal'));
+                                if (modal) modal.hide();
+                            } else {
+                                alert(json && json.message ? json.message : 'Erreur lors de l\'annulation de la commande.');
+                            }
+                        } catch (err) { console.error(err); alert('Erreur réseau lors de l\'annulation.'); }
+                    };
+                }
             } else {
                 alert("Erreur lors de l’enregistrement de la commande.");
             }

@@ -12,9 +12,24 @@ class ProduitController extends Controller
     /**
      * Affiche la liste de tous les produits.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $produits = Produit::all();
+        $query = Produit::query();
+
+        if ($request->has('search') && trim($request->search) !== '') {
+            $q = $request->search;
+            $query->where(function ($sub) use ($q) {
+                $sub->where('nom', 'LIKE', "%{$q}%")
+                    ->orWhere('description', 'LIKE', "%{$q}%");
+            });
+        }
+
+        if ($request->has('categorie') && trim($request->categorie) !== '') {
+            $query->where('categorie', $request->categorie);
+        }
+
+        $produits = $query->orderBy('nom')->get();
+
         return view('produits.index', compact('produits'));
     }
 
@@ -139,7 +154,7 @@ class ProduitController extends Controller
             'prix' => number_format($produit->prix, 2, ',', ' ') . ' GNF',
             'stock' => $produit->stock,
             'description' => $produit->description,
-            'image' => $produit->image ? Storage::url($produit->image) : null,
+            'image' => $produit->image ? asset('storage/' . $produit->image) : null,
         ]);
     }
 
@@ -158,7 +173,7 @@ class ProduitController extends Controller
             'prix' => $produit->prix,
             'stock' => $produit->stock,
             'description' => $produit->description,
-            'image' => $produit->image ? Storage::url($produit->image) : null,
+            'image' => $produit->image ? asset('storage/' . $produit->image) : null,
         ]);
     }
 
@@ -189,13 +204,17 @@ class ProduitController extends Controller
 
         $produit->update($data);
 
-        return response()->json(['success' => true, 'message' => 'Produit mis à jour avec succès !']);
+        // Retourner le produit mis à jour et construire une URL complète pour l'image
+        $updatedProduit = Produit::find($produit->id);
+        $updatedProduit->image = $updatedProduit->image ? asset('storage/' . $updatedProduit->image) : null;
+
+        return response()->json(['success' => true, 'message' => 'Produit mis à jour avec succès !', 'produit' => $updatedProduit]);
     }
 
     /**
      * Supprime un produit.
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $produit = Produit::findOrFail($id);
 
@@ -205,7 +224,11 @@ class ProduitController extends Controller
 
         $produit->delete();
 
-        return response()->json(['success' => true, 'message' => 'Produit supprimé avec succès !']);
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Produit supprimé avec succès !']);
+        }
+
+        return redirect()->route('produits.index')->with('success', 'Produit supprimé avec succès !');
     }
 
     /**
