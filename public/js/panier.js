@@ -118,6 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
         window.authUser = savedUser;
     }
 
+    const isLoggedIn = typeof window.authUser !== 'undefined' && window.authUser !== null;
     const user = window.authUser;
 
     // Fonction pour désactiver/activer les checkboxes et quantités selon l'état de connexion
@@ -126,8 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const qtyInputs = document.querySelectorAll('.qty');
         const commanderBtn = document.querySelector('.btn-commander');
 
-        const loggedNow = typeof window.authUser !== 'undefined' && window.authUser !== null;
-        if (!loggedNow) {
+        if (!isLoggedIn) {
             // Désactiver les checkboxes et inputs
             checkboxes.forEach(checkbox => {
                 checkbox.disabled = true;
@@ -142,9 +142,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 commanderBtn.disabled = true;
                 commanderBtn.title = "Veuillez vous inscrire pour commander";
             }
-            // Vider le panier et les sélections
+            // Vider le panier
             localStorage.removeItem('selectedProducts');
-            localStorage.removeItem('panier');
             produits = [];
             updateSideCart();
         } else {
@@ -166,45 +165,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // Appeler la fonction au chargement et après inscription/déconnexion
     updateProductSelectionState();
 
-    // Ensure that panier is empty when there is no connected user on initial load
-    try {
-        const loggedNow = (typeof window.authUser !== 'undefined' && window.authUser !== null) || (localStorage.getItem('clientInfo') !== null);
-        if (!loggedNow) {
-            localStorage.removeItem('panier');
-            localStorage.removeItem('selectedProducts');
-            produits = [];
-            updateSideCart();
-        }
-    } catch (e) { console.warn('Error while clearing panier on load', e); }
-
     // Observer les changements d'état de connexion
     window.addEventListener('authStateChanged', updateProductSelectionState);
-
-    // Clear panier on auth change / client change (logout)
-    window.addEventListener('clientInfoChanged', function (e) {
-        try {
-            if (!e.detail) {
-                localStorage.removeItem('panier');
-                localStorage.removeItem('selectedProducts');
-                produits = [];
-                updateSideCart();
-            }
-        } catch (err) { console.warn('clientInfoChanged handler error', err); }
-    });
-
-    // Multi-tab: if auth or client info changes in another tab, sync cart state
-    window.addEventListener('storage', function (e) {
-        try {
-            if (e.key === 'authUser' || e.key === 'clientInfo') {
-                updateProductSelectionState();
-            }
-            if (e.key === 'panier' && !e.newValue) {
-                // panier has been cleared in another tab
-                produits = [];
-                updateSideCart();
-            }
-        } catch (err) { console.warn('storage event handling error', err); }
-    });
 
     function updateSideCart() {
         // Vérifier que sideCartList existe
@@ -747,7 +709,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (e) {
                 clientInfoHtml = `<p>Erreur lecture informations client.</p>`;
             }
-        } else if (typeof window.authUser !== 'undefined' && window.authUser !== null && user) {
+        } else if (isLoggedIn && user) {
             clientInfoHtml = `
                 <p><strong>Nom :</strong> ${user.nom}</p>
                 <p><strong>Téléphone :</strong> ${user.tel ?? ''}</p>
@@ -917,7 +879,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         } catch (e) {
                             doc.text("Vous n'êtes pas connecté ou vos informations ne sont pas disponibles.", 10, y);
                         }
-                    } else if (typeof window.authUser !== 'undefined' && window.authUser !== null && user) {
+                    } else if (typeof isLoggedIn !== 'undefined' && isLoggedIn && user) {
                         const nom = user.nom || 'Non précisé';
                         const tel = user.tel || 'Non précisé';
                         const whatsapp = user.whatsapp || 'Non précisé';

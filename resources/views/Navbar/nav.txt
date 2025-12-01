@@ -328,9 +328,9 @@ document.addEventListener("DOMContentLoaded", function () {
             btnConfirmer.className = "btn btn-success w-100 mt-2";
             btnConfirmer.textContent = "Confirmer la commande";
 
-                btnConfirmer.addEventListener('click', function (e) {
+            btnConfirmer.addEventListener('click', function (e) {
                 e.preventDefault();
-                const isLoggedIn = (typeof window.authUser !== 'undefined' && window.authUser !== null) || !!localStorage.getItem('clientInfo');
+                const isLoggedIn = @json(auth()->check());
                 if (!isLoggedIn) {
                     const modal = new bootstrap.Modal(document.getElementById('inscriptionModal'));
                     modal.show();
@@ -343,11 +343,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    function envoyerCommande(client_id) {
-        if (typeof client_id === 'undefined' || client_id === null) {
-            client_id = (typeof window.authUser !== 'undefined' && window.authUser !== null) ? window.authUser.id : null;
-            try { if (!client_id) { const parsed = JSON.parse(localStorage.getItem('clientInfo')); if (parsed && parsed.client && parsed.client.id) client_id = parsed.client.id; } } catch (e) { }
-        }
+    function envoyerCommande(client_id = @json(auth()->check() ? auth()->user()->id : null)) {
         const formData = new FormData();
         formData.append('produits', JSON.stringify(produits));
         formData.append('prix_total', produits.reduce((sum, p) => sum + p.total, 0));
