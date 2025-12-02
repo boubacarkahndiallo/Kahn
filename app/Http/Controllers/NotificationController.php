@@ -12,7 +12,7 @@ class NotificationController extends Controller
     /**
      * Afficher la page des notifications
      */
-    public function index()
+    public function index(): \Illuminate\View\View
     {
         return view('notifications.index');
     }
@@ -20,9 +20,9 @@ class NotificationController extends Controller
     /**
      * Récupérer les notifications non lues de l'utilisateur actuel
      */
-    public function getUnread()
+    public function getUnread(): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -58,14 +58,14 @@ class NotificationController extends Controller
     /**
      * Récupérer toutes les notifications (avec pagination)
      */
-    public function getAll(Request $request)
+    public function getAll(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $perPage = $request->get('per_page', 20);
+        $perPage = (int) $request->get('per_page', 20);
         $notifications = Notification::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -82,9 +82,9 @@ class NotificationController extends Controller
     /**
      * Marquer une notification comme lue
      */
-    public function markAsRead($id)
+    public function markAsRead(int $id): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -103,9 +103,9 @@ class NotificationController extends Controller
     /**
      * Marquer toutes les notifications comme lues
      */
-    public function markAllAsRead()
+    public function markAllAsRead(): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -123,9 +123,9 @@ class NotificationController extends Controller
     /**
      * Supprimer une notification
      */
-    public function delete($id)
+    public function delete(int $id): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
