@@ -1,116 +1,667 @@
+// public/js/client.js — Very small minimal placeholder to validate final rebase
+// (This is temporary; a fuller clean implementation is in client.clean.js)
+(function () {
+    'use strict';
+    function noop() { }
+    window.appClient = window.appClient || {};
+    window.appClient.showClient = (id) => { console.warn('showClient stub - use client.clean.js'); };
+    window.appClient.editClient = (id) => { console.warn('editClient stub - use client.clean.js'); };
+})();
+// public/js/client.js — Minimal single clean implementation for client interactions
+(function () {
+    'use strict';
+
+    async function fetchJson(url, opts = {}) {
+        try { const res = await fetch(url, opts); return await res.json(); } catch (e) { console.error('fetchJson error', e); return { error: 'Network error' }; }
+    }
+
+    function initIntl(el) {
+        if (!el || !window.intlTelInput) return null;
+        if (el.hasAttribute && el.hasAttribute('data-iti-initialized')) return null;
+        try {
+            const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' });
+            el.setAttribute('data-iti-initialized', '1');
+            return iti;
+        } catch (err) { console.warn('initIntl error', err); return null; }
+    }
+
+    function renderClientInfo(payload) {
+        const container = document.getElementById('clientInfo'); if (!container) return; const obj = payload && payload.client ? payload.client : (payload || {});
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
+        const nom = obj.nom || obj.prenom || 'Client'; const tel = obj.tel || obj.whatsapp || '-'; const whatsapp = obj.whatsapp || '-';
+        container.innerHTML = `<div class="alert alert-success"><strong>${nom}</strong> <br/><small>${tel} • ${whatsapp}</small> <div class="float-end"><button id="logoutBtnTop" class="btn btn-danger btn-sm">Déconnexion</button></div></div>`;
+        container.style.display = 'block'; const form = document.getElementById('clientRegistrationForm'); if (form) form.style.display = 'none';
+        document.getElementById('logoutBtnTop')?.addEventListener('click', () => { try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } });
+    }
+
+    async function showClient(id) { const c = document.getElementById('voirClientContent'); if (!c) return; c.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-show`); if (client.error) { c.innerHTML = `<p class='text-danger'>${client.error}</p>`; return; } c.innerHTML = `<div class='row g-3'><div class='col-4 text-center'><img src='${client.image || "https://via.placeholder.com/150"}' class='img-fluid rounded' /></div><div class='col-8'><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Tél :</strong> ${client.tel || '-'}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p></div></div>`; const modalEl = document.getElementById('voirClientModal'); if (modalEl && window.bootstrap) new bootstrap.Modal(modalEl).show(); }
+
+    async function editClient(id) { const c = document.getElementById('editClientContent'); if (!c) return; c.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-edit`); if (client.error) { c.innerHTML = `<p class='text-danger'>${client.error}</p>`; return; } c.innerHTML = `<form id='editClientForm'><div><label>Nom</label><input id='editNom' value='${client.nom || ""}' class='form-control'/></div><div><label>Tél</label><input id='editTel' value='${client.tel || ""}' class='form-control'/></div><div><label>WhatsApp</label><input id='editWhatsapp' value='${client.whatsapp || ""}' class='form-control'/></div><div class='mt-2 text-end'><button type='button' id='saveClientBtn' class='btn btn-success'>Enregistrer</button></div></form>`; initIntl(document.getElementById('editTel')); initIntl(document.getElementById('editWhatsapp')); document.getElementById('saveClientBtn')?.addEventListener('click', async () => { const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || ''); f.append('tel', document.getElementById('editTel').value || ''); f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); try { const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '' }, body: f }); if (resp && resp.success) location.reload(); else alert(resp.message || 'Erreur'); } catch (e) { console.error(e); alert('Erreur'); } }); }
+
+    document.addEventListener('click', function (e) { const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
+
+    document.addEventListener('DOMContentLoaded', function () { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient'); const itiTel = initIntl(tel); const itiWa = initIntl(wa); if (formAdd) formAdd.addEventListener('submit', function () { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { } }); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { } });
+
+    window.appClient = window.appClient || {}; window.appClient.showClient = showClient; window.appClient.editClient = editClient; window.appClient.renderClientInfo = renderClientInfo;
+})();
+// public/js/client.js — Consolidated client utilities (single clean implementation)
+(function () {
+    'use strict';
+
+    async function fetchJson(url, opts = {}) {
+        try {
+            const res = await fetch(url, opts);
+            return await res.json();
+        } catch (err) {
+            console.error('fetchJson error', url, err);
+            return { error: 'Network error' };
+        }
+    }
+
+    function initIntl(el) {
+        if (!el || !window.intlTelInput) return null;
+        if (el.hasAttribute && el.hasAttribute('data-iti-initialized')) return null;
+        try {
+            const iti = window.intlTelInput(el, {
+                separateDialCode: true,
+                initialCountry: 'gn',
+                preferredCountries: ['gn', 'sn', 'ci', 'ml'],
+                utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
+            });
+            el.setAttribute('data-iti-initialized', '1');
+            return iti;
+        } catch (err) {
+            console.warn('initIntl error', err);
+            return null;
+        }
+    }
+
+    function renderClientInfo(payload) {
+        const container = document.getElementById('clientInfo');
+        const form = document.getElementById('clientRegistrationForm');
+        if (!container) return;
+        const obj = payload && payload.client ? payload.client : (payload || {});
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
+        const nom = obj.nom || obj.prenom || 'Client';
+        const tel = obj.tel || obj.whatsapp || '-';
+        const whatsapp = obj.whatsapp || '-';
+        const adresse = obj.adresse || '-';
+        container.innerHTML = `\n      <div class="alert alert-success d-flex justify-content-between align-items-center">\n        <div><strong>${nom}</strong><br><small>${tel} • ${whatsapp}</small></div>\n        <div><button id='modifyBtnTop' class='btn btn-success btn-sm'>Modifier</button> <button id='logoutBtnTop' class='btn btn-danger btn-sm ms-2'>Déconnexion</button></div>\n      </div>`;
+        container.style.display = 'block'; if (form) form.style.display = 'none';
+        document.getElementById('modifyBtnTop')?.addEventListener('click', () => {
+            if (form) { form.style.display = 'block'; container.style.display = 'none'; try { const stored = JSON.parse(localStorage.getItem('clientInfo')) || {}; const c = stored.client || {}; const setIf = (sel, val) => { const i = document.querySelector(sel); if (i) i.value = val || ''; }; setIf('#nom', c.nom || c.prenom || ''); setIf('#tel', c.tel || c.whatsapp || ''); setIf('#whatsapp', c.whatsapp || c.tel || ''); setIf('#adresse', c.adresse || ''); } catch (e) { console.warn(e); } }
+        });
+        document.getElementById('logoutBtnTop')?.addEventListener('click', () => {
+            try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { }
+            window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged'));
+            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+        });
+    }
+
+    async function showClient(id) {
+        const container = document.getElementById('voirClientContent');
+        if (!container) return; container.innerHTML = '<p class="text-center">Chargement...</p>';
+        const client = await fetchJson(`/clients/${id}/ajax-show`);
+        if (client.error) { container.innerHTML = `<p class='text-danger'>${client.error}</p>`; return; }
+        const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+        container.innerHTML = `<div class='row g-3'><div class='col-md-4 text-center'><img src='${client.image || "https://via.placeholder.com/150"}' class='img-fluid rounded' /></div><div class='col-md-8'><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel || '-'}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href='https://www.google.com/maps?q=${client.latitude},${client.longitude}' target='_blank'>Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`;
+        const modalEl = document.getElementById('voirClientModal'); if (modalEl && window.bootstrap) new bootstrap.Modal(modalEl).show();
+    }
+
+    async function editClient(id) {
+        const container = document.getElementById('editClientContent'); if (!container) return; container.innerHTML = '<p class="text-center">Chargement...</p>';
+        const client = await fetchJson(`/clients/${id}/ajax-edit`); if (client.error) { container.innerHTML = `<p class='text-danger'>${client.error}</p>`; return; }
+        container.innerHTML = `<form id='editClientForm' enctype='multipart/form-data'><div class='mb-2'><label>Nom</label><input id='editNom' value='${client.nom || ""}' class='form-control'/></div><div class='mb-2'><label>Tél</label><input id='editTel' value='${client.tel || ""}' class='form-control'/></div><div class='mb-2'><label>WhatsApp</label><input id='editWhatsapp' value='${client.whatsapp || ""}' class='form-control'/></div><div class='mb-2'><label>Adresse</label><input id='editAdresse' value='${client.adresse || ""}' class='form-control'/></div><div class='text-end'><button type='button' id='saveClientBtn' class='btn btn-success'>Enregistrer</button></div></form>`;
+        initIntl(document.getElementById('editTel')); initIntl(document.getElementById('editWhatsapp'));
+        document.getElementById('saveClientBtn')?.addEventListener('click', async () => {
+            const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || ''); f.append('tel', document.getElementById('editTel').value || ''); f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); f.append('adresse', document.getElementById('editAdresse').value || '');
+            try { const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '' }, body: f }); if (resp && resp.success) location.reload(); else alert(resp.message || 'Erreur'); } catch (e) { console.error(e); alert('Erreur'); }
+        });
+        const modalEl = document.getElementById('editClientModal'); if (modalEl && window.bootstrap) new bootstrap.Modal(modalEl).show();
+    }
+
+    document.addEventListener('click', (e) => { const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
+
+    document.addEventListener('DOMContentLoaded', () => { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient'); const itiTel = initIntl(tel); const itiWa = initIntl(wa); if (formAdd) formAdd.addEventListener('submit', () => { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { } }); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { } });
+
+    window.appClient = window.appClient || {}; window.appClient.showClient = showClient; window.appClient.editClient = editClient; window.appClient.renderClientInfo = renderClientInfo;
+})();
+// public/js/client.js — Clean consolidated client utilities (replacement)
+(function () {
+    'use strict';
+
+    async function fetchJson(url, opts) { try { const res = await fetch(url, opts); return await res.json(); } catch (e) { console.error('fetchJson', e); return { error: 'Network error' }; } }
+
+    function initIntl(el) { if (!el || !window.intlTelInput) return null; if (el.getAttribute && el.getAttribute('data-iti-initialized')) return null; try { const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' }); el.setAttribute('data-iti-initialized', '1'); return iti; } catch (e) { console.warn('initIntl error', e); return null; } }
+
+    function renderClientInfo(payload) { const container = document.getElementById('clientInfo'); if (!container) return; const obj = payload && payload.client ? payload.client : (payload || {}); try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { } const nom = obj.nom || obj.prenom || 'Client'; const tel = obj.tel || obj.whatsapp || '-'; const whatsapp = obj.whatsapp || '-'; const adresse = obj.adresse || '-'; container.innerHTML = `<div class="alert alert-success"><strong>${nom}</strong> <small>${tel} • ${whatsapp}</small><div class="float-end"><button id="logoutBtnTop" class="btn btn-danger">Déconnexion</button></div></div>`; const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = function () { try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } } }
+
+    function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
+
+    async function showClient(id) { const voirModalBody = document.getElementById('voirClientContent'); const voirModalEl = document.getElementById('voirClientModal'); const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null; if (!voirModalBody) return; voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-show`); if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>'; voirModalBody.innerHTML = `<div class="row g-3"><div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div><div class="col-md-8"><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel || '-'}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`; if (voirModal) voirModal.show(); }
+
+    async function editClient(id) { const editModalBody = document.getElementById('editClientContent'); const editModalEl = document.getElementById('editClientModal'); const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null; if (!editModalBody) return; editModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-edit`); if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } editModalBody.innerHTML = `<form id="editClientForm"><div><label>Nom</label><input id="editNom" value="${client.nom || ''}" class="form-control"/></div><div><label>Tél</label><input id="editTel" value="${client.tel || ''}" class="form-control"/></div><div><label>WhatsApp</label><input id="editWhatsapp" value="${client.whatsapp || ''}" class="form-control"/></div><div><label>Adresse</label><input id="editAdresse" value="${client.adresse || ''}" class="form-control"/></div><div class="mt-2 text-end"><button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button></div></form>`; const elTel = document.getElementById('editTel'); const elWhatsapp = document.getElementById('editWhatsapp'); const itiTel = initIntl(elTel); const itiWhatsapp = initIntl(elWhatsapp); const saveBtn = document.getElementById('saveClientBtn'); if (saveBtn) saveBtn.addEventListener('click', async () => { const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || ''); if (itiTel && itiTel.isValidNumber()) { f.append('tel', itiTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); } if (itiWhatsapp && itiWhatsapp.isValidNumber()) { f.append('whatsapp', itiWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); } f.append('adresse', document.getElementById('editAdresse').value || ''); try { const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '' }, body: f }); if (resp && resp.success) { if (editModal) editModal.hide(); location.reload(); } else { alert(resp.message || 'Erreur'); } } catch (e) { console.error(e); alert('Erreur'); } }); if (editModal) editModal.show(); }
+
+    document.addEventListener('click', function (e) { const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
+
+    document.addEventListener('DOMContentLoaded', function () { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient'); const itiTel = initIntl(tel); const itiWa = initIntl(wa); if (formAdd) formAdd.addEventListener('submit', function () { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { console.warn(e); } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { console.warn(e); } }); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { /* ignore */ } });
+
+    window.appClient = window.appClient || {};
+    window.appClient.showClient = showClient;
+    window.appClient.editClient = editClient;
+})();
+// public/js/client.js — Clean consolidated client utilities (replacement)
+(function () {
+    'use strict';
+
+    async function fetchJson(url, opts) { try { const res = await fetch(url, opts); return await res.json(); } catch (e) { console.error('fetchJson', e); return { error: 'Network error' }; } }
+
+    function initIntl(el) { if (!el || !window.intlTelInput) return null; if (el.getAttribute && el.getAttribute('data-iti-initialized')) return null; try { const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' }); el.setAttribute('data-iti-initialized', '1'); return iti; } catch (e) { console.warn('initIntl error', e); return null; } }
+
+    function renderClientInfo(payload) { const container = document.getElementById('clientInfo'); if (!container) return; const obj = payload && payload.client ? payload.client : (payload || {}); try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { } const nom = obj.nom || obj.prenom || 'Client'; const tel = obj.tel || obj.whatsapp || '-'; const whatsapp = obj.whatsapp || '-'; const adresse = obj.adresse || '-'; container.innerHTML = `<div class="alert alert-success"><strong>${nom}</strong> <small>${tel} • ${whatsapp}</small><div class="float-end"><button id="logoutBtnTop" class="btn btn-danger">Déconnexion</button></div></div>`; const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = function () { try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } } }
+
+    function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
+
+    async function showClient(id) { const voirModalBody = document.getElementById('voirClientContent'); const voirModalEl = document.getElementById('voirClientModal'); const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null; if (!voirModalBody) return; voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-show`); if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>'; voirModalBody.innerHTML = `<div class="row g-3"><div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div><div class="col-md-8"><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel || '-'}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`; if (voirModal) voirModal.show(); }
+
+    async function editClient(id) { const editModalBody = document.getElementById('editClientContent'); const editModalEl = document.getElementById('editClientModal'); const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null; if (!editModalBody) return; editModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-edit`); if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } editModalBody.innerHTML = `<form id="editClientForm"><div><label>Nom</label><input id="editNom" value="${client.nom || ''}" class="form-control"/></div><div><label>Tél</label><input id="editTel" value="${client.tel || ''}" class="form-control"/></div><div><label>WhatsApp</label><input id="editWhatsapp" value="${client.whatsapp || ''}" class="form-control"/></div><div><label>Adresse</label><input id="editAdresse" value="${client.adresse || ''}" class="form-control"/></div><div class="mt-2 text-end"><button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button></div></form>`; const elTel = document.getElementById('editTel'); const elWhatsapp = document.getElementById('editWhatsapp'); const itiTel = initIntl(elTel); const itiWhatsapp = initIntl(elWhatsapp); const saveBtn = document.getElementById('saveClientBtn'); if (saveBtn) saveBtn.addEventListener('click', async () => { const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || ''); if (itiTel && itiTel.isValidNumber()) { f.append('tel', itiTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); } if (itiWhatsapp && itiWhatsapp.isValidNumber()) { f.append('whatsapp', itiWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); } f.append('adresse', document.getElementById('editAdresse').value || ''); try { const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '' }, body: f }); if (resp && resp.success) { if (editModal) editModal.hide(); location.reload(); } else { alert(resp.message || 'Erreur'); } } catch (e) { console.error(e); alert('Erreur'); } }); if (editModal) editModal.show(); }
+
+    document.addEventListener('click', function (e) { const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
+
+    document.addEventListener('DOMContentLoaded', function () { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient'); const itiTel = initIntl(tel); const itiWa = initIntl(wa); if (formAdd) formAdd.addEventListener('submit', function () { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { console.warn(e); } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { console.warn(e); } }); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { /* ignore */ } });
+
+    window.appClient = window.appClient || {};
+    window.appClient.showClient = showClient;
+    window.appClient.editClient = editClient;
+})();
+// public/js/client.js — Single clean implementation
+(function () {
+    'use strict';
+
+    async function fetchJson(url, opts = {}) {
+        try { const res = await fetch(url, opts); return await res.json(); } catch (e) { console.error('fetchJson error', e); return { error: 'Network error' }; }
+    }
+
+    function initIntl(el) {
+        if (!el || !window.intlTelInput) return null;
+        if (el.hasAttribute && el.hasAttribute('data-iti-initialized')) return null;
+        try { const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' }); el.setAttribute('data-iti-initialized', '1'); return iti; } catch (e) { console.warn('initIntl error', e); return null; }
+    }
+
+    function renderClientInfo(payload) {
+        const container = document.getElementById('clientInfo'); if (!container) return;
+        const obj = payload && payload.client ? payload.client : (payload || {});
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
+        const nom = obj.nom || obj.prenom || 'Client'; const tel = obj.tel || obj.whatsapp || '-'; const whatsapp = obj.whatsapp || '-'; const adresse = obj.adresse || '-';
+        container.innerHTML = `<div class="alert alert-success d-flex justify-content-between align-items-center"><div><strong>${nom}</strong><br><small>${tel} • ${whatsapp}</small></div><div><button id='modifyBtnTop' class='btn btn-success btn-sm'>Modifier</button> <button id='logoutBtnTop' class='btn btn-danger btn-sm ms-2'>Déconnexion</button></div></div>`;
+        container.style.display = 'block'; const form = document.getElementById('clientRegistrationForm'); if (form) form.style.display = 'none';
+        document.getElementById('modifyBtnTop')?.addEventListener('click', () => { if (form) { form.style.display = 'block'; container.style.display = 'none'; try { const stored = JSON.parse(localStorage.getItem('clientInfo')) || {}; const c = stored.client || {}; const setIf = (sel, val) => { const i = document.querySelector(sel); if (i) i.value = val || ''; }; setIf('#nom', c.nom || c.prenom || ''); setIf('#tel', c.tel || c.whatsapp || ''); setIf('#whatsapp', c.whatsapp || c.tel || ''); setIf('#adresse', c.adresse || ''); } catch (e) { console.warn(e); } } });
+        document.getElementById('logoutBtnTop')?.addEventListener('click', () => { try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } });
+    }
+
+    async function showClient(id) { const container = document.getElementById('voirClientContent'); if (!container) return; container.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-show`); if (client.error) { container.innerHTML = `<p class='text-danger'>${client.error}</p>`; return; } const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>'; container.innerHTML = `<div class='row g-3'><div class='col-md-4 text-center'><img src='${client.image || "https://via.placeholder.com/150"}' class='img-fluid rounded' /></div><div class='col-md-8'><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel || '-'}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href='https://www.google.com/maps?q=${client.latitude},${client.longitude}' target='_blank'>Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`; const modalEl = document.getElementById('voirClientModal'); if (modalEl && window.bootstrap) new bootstrap.Modal(modalEl).show(); }
+
+    async function editClient(id) { const container = document.getElementById('editClientContent'); if (!container) return; container.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-edit`); if (client.error) { container.innerHTML = `<p class='text-danger'>${client.error}</p>`; return; } container.innerHTML = `<form id='editClientForm' enctype='multipart/form-data'><div class='mb-2'><label>Nom</label><input id='editNom' value='${client.nom || ""}' class='form-control'/></div><div class='mb-2'><label>Tél</label><input id='editTel' value='${client.tel || ""}' class='form-control'/></div><div class='mb-2'><label>WhatsApp</label><input id='editWhatsapp' value='${client.whatsapp || ""}' class='form-control'/></div><div class='mb-2'><label>Adresse</label><input id='editAdresse' value='${client.adresse || ""}' class='form-control'/></div><div class='text-end'><button type='button' id='saveClientBtn' class='btn btn-success'>Enregistrer</button></div></form>`; initIntl(document.getElementById('editTel')); initIntl(document.getElementById('editWhatsapp')); document.getElementById('saveClientBtn')?.addEventListener('click', async () => { const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || ''); f.append('tel', document.getElementById('editTel').value || ''); f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); f.append('adresse', document.getElementById('editAdresse').value || ''); try { const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '' }, body: f }); if (resp && resp.success) location.reload(); else alert(resp.message || 'Erreur'); } catch (e) { console.error(e); alert('Erreur'); } }); const modalEl = document.getElementById('editClientModal'); if (modalEl && window.bootstrap) new bootstrap.Modal(modalEl).show(); }
+
+    document.addEventListener('click', (e) => { const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
+
+    document.addEventListener('DOMContentLoaded', () => { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient'); const itiTel = initIntl(tel); const itiWa = initIntl(wa); if (formAdd) formAdd.addEventListener('submit', () => { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { } }); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { } });
+
+    window.appClient = window.appClient || {}; window.appClient.showClient = showClient; window.appClient.editClient = editClient; window.appClient.renderClientInfo = renderClientInfo;
+})();
+// public/js/client.js — Clean consolidated client utilities
+(function () {
+    'use strict';
+
+    // Safe JSON fetch helper
+    async function fetchJson(url, opts) {
+        try {
+            const res = await fetch(url, opts);
+            // Replaced with a single clean implementation
+            (function () {
+                'use strict';
+
+                async function fetchJson(url, opts) { try { const res = await fetch(url, opts); return await res.json(); } catch (e) { console.error('fetchJson', e); return { error: 'Network error' }; } }
+                function initIntl(el) { if (!el || !window.intlTelInput) return null; if (el.getAttribute && el.getAttribute('data-iti-initialized')) return null; try { const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' }); el.setAttribute('data-iti-initialized', '1'); return iti; } catch (e) { console.warn('initIntl error', e); return null; } }
+
+                function renderClientInfo(payload) { const container = document.getElementById('clientInfo'); if (!container) return; const form = document.getElementById('clientRegistrationForm'); const obj = payload && payload.client ? payload.client : (payload || {}); try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { } const nom = obj.nom || obj.prenom || 'Client'; const tel = obj.tel || obj.whatsapp || '-'; const whatsapp = obj.whatsapp || '-'; const adresse = obj.adresse || '-'; container.innerHTML = `<div class="alert alert-success"><div class="d-flex justify-content-between"><div><strong>${nom}</strong><br><small>${tel} • ${whatsapp}</small></div><div><button id="modifyBtnTop" class="btn btn-sm btn-success me-2">Modifier</button><button id="logoutBtnTop" class="btn btn-sm btn-danger">Déconnexion</button></div></div></div>`; if (form) form.style.display = 'none'; const modifyBtn = document.getElementById('modifyBtnTop'); if (modifyBtn) modifyBtn.onclick = () => { if (form) form.style.display = 'block'; container.style.display = 'none'; try { const stored = JSON.parse(localStorage.getItem('clientInfo')) || {}; const c = stored.client || {}; const setIf = (s, v) => { const el = document.querySelector(s); if (el) el.value = v || ''; }; setIf('#nom', c.nom || c.prenom || ''); setIf('#tel', c.tel || c.whatsapp || ''); setIf('#whatsapp', c.whatsapp || c.tel || ''); setIf('#adresse', c.adresse || ''); } catch (e) { console.warn(e); } }; const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = () => { try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } } }
+
+                function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
+
+                async function showClient(id) { const voirModalBody = document.getElementById('voirClientContent'); const voirModalEl = document.getElementById('voirClientModal'); const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null; if (!voirModalBody) return; voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-show`); if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>'; voirModalBody.innerHTML = `<div class="row g-3"><div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div><div class="col-md-8"><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel || '-'}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`; if (voirModal) voirModal.show(); }
+
+                async function editClient(id) { const editModalBody = document.getElementById('editClientContent'); const editModalEl = document.getElementById('editClientModal'); const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null; if (!editModalBody) return; editModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; const client = await fetchJson(`/clients/${id}/ajax-edit`); if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } editModalBody.innerHTML = `<form id="editClientForm"><div class="mb-2"><label>Nom</label><input id="editNom" value="${client.nom || ''}" class="form-control"/></div><div class="mb-2"><label>Tél</label><input id="editTel" value="${client.tel || ''}" class="form-control"/></div><div class="mb-2"><label>WhatsApp</label><input id="editWhatsapp" value="${client.whatsapp || ''}" class="form-control"/></div><div class="mb-2"><label>Adresse</label><input id="editAdresse" value="${client.adresse || ''}" class="form-control"/></div><div class="text-end"><button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button></div></form>`; const elTel = document.getElementById('editTel'); const elWhatsapp = document.getElementById('editWhatsapp'); const itiTel = initIntl(elTel); const itiWhatsapp = initIntl(elWhatsapp); const saveBtn = document.getElementById('saveClientBtn'); if (saveBtn) saveBtn.addEventListener('click', async () => { const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || ''); if (itiTel && itiTel.isValidNumber()) { f.append('tel', itiTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); } if (itiWhatsapp && itiWhatsapp.isValidNumber()) { f.append('whatsapp', itiWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); } f.append('adresse', document.getElementById('editAdresse').value || ''); try { const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '' }, body: f }); if (resp && resp.success) { if (editModal) editModal.hide(); location.reload(); } else { alert(resp.message || 'Erreur'); } } catch (e) { console.error(e); alert('Erreur'); } }); if (editModal) editModal.show(); }
+
+                document.addEventListener('click', (e) => { const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
+
+                document.addEventListener('DOMContentLoaded', () => { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient'); const itiTel = initIntl(tel); const itiWa = initIntl(wa); if (formAdd) formAdd.addEventListener('submit', () => { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { console.warn(e); } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { console.warn(e); } }); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { } });
+
+                window.appClient = window.appClient || {};
+                window.appClient.showClient = showClient;
+                window.appClient.editClient = editClient;
+                window.appClient.renderClientInfo = renderClientInfo;
+            })();
+            container.style.display = 'none';
+            try {
+                const parsed = JSON.parse(localStorage.getItem('clientInfo')) || {};
+                const c = parsed.client || {};
+                const setIf = (sel, val) => { const el = document.querySelector(sel); if (el) el.value = val || ''; };
+                setIf('#nom', c.nom || c.prenom || ''); setIf('#tel', c.tel || c.whatsapp || ''); setIf('#whatsapp', c.whatsapp || c.tel || ''); setIf('#adresse', c.adresse || '');
+            } catch (e) { console.warn(e); }
+        };
+        const logoutBtn = document.getElementById('logoutBtnTop');
+        if (logoutBtn) logoutBtn.onclick = () => {
+            try { localStorage.removeItem('clientInfo'); } catch (e) { }
+            try { localStorage.removeItem('panier'); } catch (e) { }
+            try { localStorage.removeItem('selectedProducts'); } catch (e) { }
+            try { window.authUser = null; } catch (e) { }
+            window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
+            window.dispatchEvent(new CustomEvent('authStateChanged'));
+            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+        };
+    }
+
+    function clearClientInfo() {
+        const container = document.getElementById('clientInfo');
+        const form = document.getElementById('clientRegistrationForm');
+        if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block';
+    }
+
+    // Modal show
+    async function showClient(id) {
+        const voirModalBody = document.getElementById('voirClientContent');
+        const voirModalEl = document.getElementById('voirClientModal');
+        const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null;
+        if (!voirModalBody) return;
+        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        const client = await fetchJson(`/clients/${id}/ajax-show`);
+        if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+        voirModalBody.innerHTML = `
+      <div class="row g-3">
+        <div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div>
+        <div class="col-md-8">
+          <p><strong>Nom :</strong> ${client.nom}</p>
+          <p><strong>Téléphone :</strong> ${client.tel || '-'}</p>
+          <p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p>
+          <p><strong>Adresse :</strong> ${client.adresse || '-'}</p>
+          ${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}
+          <p><strong>Statut :</strong> ${statut}</p>
+          <p>${client.description || ''}</p>
+        </div>
+      </div>`;
+        if (voirModal) voirModal.show();
+    }
+
+    // Edit modal
+    async function editClient(id) {
+        const editModalBody = document.getElementById('editClientContent');
+        const editModalEl = document.getElementById('editClientModal');
+        const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null;
+        if (!editModalBody) return;
+        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        const client = await fetchJson(`/clients/${id}/ajax-edit`);
+        if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        editModalBody.innerHTML = `
+      <form id="editClientForm" enctype="multipart/form-data">
+        <div class="row g-3">
+          <div class="col-md-4 text-center">
+            <label class="form-label fw-bold">Photo</label>
+            <div id="imageContainer" style="width:130px;height:130px;background:#f8f9fa;border-radius:50%;overflow:hidden;margin:auto;position:relative;">
+              <img id="currentImage" src="${client.image || 'https://via.placeholder.com/130'}" class="w-100 h-100" style="object-fit:cover;"/>
+              <input type="file" id="editImage" name="image" accept="image/*" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;"/>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-bold">Nom</label>
+            <input type="text" id="editNom" value="${client.nom || ''}" class="form-control"/>
+            <label class="form-label fw-bold mt-2">Téléphone</label>
+            <input type="tel" id="editTel" value="${client.tel || ''}" class="form-control"/>
+            <label class="form-label fw-bold mt-2">WhatsApp</label>
+            <input type="tel" id="editWhatsapp" value="${client.whatsapp || ''}" class="form-control"/>
+            <label class="form-label fw-bold mt-2">Adresse</label>
+            <div class="input-group">
+              <input type="text" id="editAdresse" value="${client.adresse || ''}" class="form-control"/>
+              <button id="editDetectPositionBtn" class="btn btn-outline-secondary" type="button" title="Détecter position"><i class="fa fa-map-marker-alt"></i></button>
+            </div>
+            <input type="hidden" id="editLatitude" value="${client.latitude || ''}"/>
+            <input type="hidden" id="editLongitude" value="${client.longitude || ''}"/>
+            <div class="mt-3 text-end">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      </form>`;
+        // preview
+        const inputImage = document.getElementById('editImage'); const currentImage = document.getElementById('currentImage');
+        if (inputImage && currentImage) inputImage.addEventListener('change', (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(f); });
+        const elEditTel = document.getElementById('editTel'); const elEditWhatsapp = document.getElementById('editWhatsapp');
+        const itiEditTel = initIntl(elEditTel); const itiEditWhatsapp = initIntl(elEditWhatsapp);
+        const editDetectBtn = document.getElementById('editDetectPositionBtn');
+        if (editDetectBtn) editDetectBtn.addEventListener('click', () => {
+            if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
+            editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                const latEl = document.getElementById('editLatitude'); const lonEl = document.getElementById('editLongitude'); if (latEl) latEl.value = lat; if (lonEl) lonEl.value = lon;
+                try { const d = await fetchJson(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (e) { console.warn(e); }
+                editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+            }, (err) => { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
+        });
+        // Save
+        const saveBtn = document.getElementById('saveClientBtn');
+        if (saveBtn) saveBtn.addEventListener('click', async () => {
+            const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || '');
+            if (itiEditTel && itiEditTel.isValidNumber()) { f.append('tel', itiEditTel.getNumber()); f.append('tel_e164', itiEditTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); }
+            if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { f.append('whatsapp', itiEditWhatsapp.getNumber()); f.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
+            f.append('adresse', document.getElementById('editAdresse').value || ''); f.append('latitude', document.getElementById('editLatitude').value || ''); f.append('longitude', document.getElementById('editLongitude').value || '');
+            if (inputImage && inputImage.files && inputImage.files[0]) f.append('image', inputImage.files[0]);
+            try {
+                const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? (document.querySelector('meta[name="csrf-token"]').getAttribute('content')) : '' }, body: f });
+                if (resp && resp.success) { if (editModal) editModal.hide(); location.reload(); } else { alert(resp.message || 'Erreur'); }
+            } catch (e) { console.error(e); alert('Erreur'); }
+        });
+        if (editModal) editModal.show();
+    }
+
+    // Event delegation for view/edit
+    document.addEventListener('click', function (e) {
+        const view = e.target.closest && e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; }
+        const edit = e.target.closest && e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; }
+    });
+
+    // DOM ready: init inputs and render client info
+    document.addEventListener('DOMContentLoaded', function () {
+        const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient');
+        const itiTel = initIntl(tel); const itiWa = initIntl(wa);
+        if (formAdd) formAdd.addEventListener('submit', function () { try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { console.warn(e); } try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { console.warn(e); } });
+        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { }
+    });
+
+    // Expose API
+    window.appClient = window.appClient || {};
+    window.appClient.showClient = showClient;
+    window.appClient.editClient = editClient;
+    window.appClient.renderClientInfo = renderClientInfo;
+})();
+// public/js/client.js — Consolidated client utilities
+(function () {
+    'use strict';
+
+    // Safe fetch helper
+    async function fetchJson(url, opts) {
+        try {
+            const res = await fetch(url, opts);
+            return await res.json();
+        } catch (err) {
+            console.error('fetchJson error', url, err);
+            return { error: 'Network error' };
+        }
+    }
+
+    // Init intl-tel-input on an element if present and not already initialized
+    function initIntl(el) {
+        if (!el || !window.intlTelInput) return null;
+        if (el.hasAttribute && el.hasAttribute('data-iti-initialized')) return null;
+        try {
+            const iti = window.intlTelInput(el, {
+                separateDialCode: true,
+                initialCountry: 'gn',
+                preferredCountries: ['gn', 'sn', 'ci', 'ml'],
+                utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
+            });
+            el.setAttribute('data-iti-initialized', '1');
+            return iti;
+        } catch (err) {
+            console.warn('initIntl error', err);
+            return null;
+        }
+    }
+
+    // Render client info in #clientInfo
+    function renderClientInfo(payload) {
+        const container = document.getElementById('clientInfo');
+        const form = document.getElementById('clientRegistrationForm');
+        if (!container) return;
+        const obj = payload && payload.client ? payload.client : (payload || {});
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
+        const nom = obj.nom || obj.prenom || 'Client';
+        const tel = obj.tel || obj.whatsapp || '-';
+        const whatsapp = obj.whatsapp || '-';
+        const adresse = obj.adresse || '-';
+        container.innerHTML = `\n      <div class="alert alert-success">\n        <div class="d-flex justify-content-between align-items-center">\n          <div>\n            <strong>${nom}</strong><br>\n            <small>${tel} • ${whatsapp}</small>\n          </div>\n          <div>\n            <button id="modifyBtnTop" class="btn btn-sm btn-success me-2"><i class="fa fa-edit"></i> Modifier</button>\n            <button id="logoutBtnTop" class="btn btn-sm btn-danger"><i class="fa fa-sign-out"></i> Déconnexion</button>\n          </div>\n        </div>\n      </div>`;
+        container.style.display = 'block';
+        if (form) form.style.display = 'none';
+        const modifyBtn = document.getElementById('modifyBtnTop');
+        if (modifyBtn) modifyBtn.onclick = () => {
+            if (form) form.style.display = 'block';
+            container.style.display = 'none';
+            try {
+                const parsed = JSON.parse(localStorage.getItem('clientInfo')) || {}; const c = parsed.client || {};
+                const setIf = (sel, val) => { const input = document.querySelector(sel); if (input) input.value = val || ''; };
+                setIf('#nom', c.nom || c.prenom || ''); setIf('#tel', c.tel || c.whatsapp || ''); setIf('#whatsapp', c.whatsapp || c.tel || ''); setIf('#adresse', c.adresse || '');
+            } catch (e) { console.warn(e); }
+        };
+        const logoutBtn = document.getElementById('logoutBtnTop');
+        if (logoutBtn) logoutBtn.onclick = () => {
+            try { localStorage.removeItem('clientInfo'); } catch (e) { }
+            try { localStorage.removeItem('panier'); } catch (e) { }
+            try { localStorage.removeItem('selectedProducts'); } catch (e) { }
+            try { window.authUser = null; } catch (e) { }
+            window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
+            window.dispatchEvent(new CustomEvent('authStateChanged'));
+            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+        };
+    }
+
+    function clearClientInfo() {
+        const container = document.getElementById('clientInfo');
+        const form = document.getElementById('clientRegistrationForm');
+        if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block';
+    }
+
+    // Show client modal
+    async function showClient(id) {
+        const voirModalBody = document.getElementById('voirClientContent');
+        const voirModalEl = document.getElementById('voirClientModal');
+        const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null;
+        if (!voirModalBody) return;
+        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        const client = await fetchJson(`/clients/${id}/ajax-show`);
+        if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+        voirModalBody.innerHTML = `\n      <div class="row g-3">\n        <div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div>\n        <div class="col-md-8">\n          <p><strong>Nom :</strong> ${client.nom}</p>\n          <p><strong>Téléphone :</strong> ${client.tel || '-'}</p>\n          <p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p>\n          <p><strong>Adresse :</strong> ${client.adresse || '-'}</p>\n          ${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}\n          <p><strong>Statut :</strong> ${statut}</p>\n          <p>${client.description || ''}</p>\n        </div>\n      </div>`;
+        if (voirModal) voirModal.show();
+    }
+
+    // Edit client modal and saving
+    async function editClient(id) {
+        const editModalBody = document.getElementById('editClientContent');
+        const editModalEl = document.getElementById('editClientModal');
+        const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null;
+        if (!editModalBody) return;
+        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        const client = await fetchJson(`/clients/${id}/ajax-edit`);
+        if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        // build form HTML
+        editModalBody.innerHTML = `\n      <form id="editClientForm" enctype="multipart/form-data">\n        <div class="row g-3">\n          <div class="col-md-4 text-center">\n            <label class="form-label fw-bold">Photo</label>\n            <div id="imageContainer" style="width:130px;height:130px;background:#f8f9fa;border-radius:50%;overflow:hidden;margin:auto;position:relative;">\n              <img id="currentImage" src="${client.image || 'https://via.placeholder.com/130'}" class="w-100 h-100" style="object-fit:cover;"/>\n              <input type="file" id="editImage" name="image" accept="image/*" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;"/>\n            </div>\n          </div>\n          <div class="col-md-8">\n            <label class="form-label fw-bold">Nom</label>\n            <input type="text" id="editNom" value="${client.nom || ''}" class="form-control"/>\n            <label class="form-label fw-bold mt-2">Téléphone</label>\n            <input type="tel" id="editTel" value="${client.tel || ''}" class="form-control"/>\n            <label class="form-label fw-bold mt-2">WhatsApp</label>\n            <input type="tel" id="editWhatsapp" value="${client.whatsapp || ''}" class="form-control"/>\n            <label class="form-label fw-bold mt-2">Adresse</label>\n            <div class="input-group">\n              <input type="text" id="editAdresse" value="${client.adresse || ''}" class="form-control"/>\n              <button id="editDetectPositionBtn" class="btn btn-outline-secondary" type="button" title="Détecter position"><i class="fa fa-map-marker-alt"></i></button>\n            </div>\n            <input type="hidden" id="editLatitude" value="${client.latitude || ''}"/>\n            <input type="hidden" id="editLongitude" value="${client.longitude || ''}"/>\n            <div class="mt-3 text-end">\n              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>\n              <button type="button" id="saveClientBtn" class="btn btn-success">Enregistrer</button>\n            </div>\n          </div>\n        </div>\n      </form>`;
+        // preview
+        const inputImage = document.getElementById('editImage');
+        const currentImage = document.getElementById('currentImage');
+        if (inputImage && currentImage) inputImage.addEventListener('change', (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(f); });
+        const elEditTel = document.getElementById('editTel'); const elEditWhatsapp = document.getElementById('editWhatsapp');
+        const itiEditTel = initIntl(elEditTel); const itiEditWhatsapp = initIntl(elEditWhatsapp);
+        const editDetectBtn = document.getElementById('editDetectPositionBtn');
+        if (editDetectBtn) {
+            editDetectBtn.addEventListener('click', () => {
+                if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
+                editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                    const latEl = document.getElementById('editLatitude'); const lonEl = document.getElementById('editLongitude');
+                    if (latEl) latEl.value = lat; if (lonEl) lonEl.value = lon;
+                    try { const d = await fetchJson(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (e) { console.warn(e); }
+                    editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                }, (err) => { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
+            });
+        }
+        // Save
+        const saveBtn = document.getElementById('saveClientBtn');
+        if (saveBtn) saveBtn.addEventListener('click', async () => {
+            const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || '');
+            if (itiEditTel && itiEditTel.isValidNumber()) { f.append('tel', itiEditTel.getNumber()); f.append('tel_e164', itiEditTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); }
+            if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { f.append('whatsapp', itiEditWhatsapp.getNumber()); f.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
+            f.append('adresse', document.getElementById('editAdresse').value || ''); f.append('latitude', document.getElementById('editLatitude').value || ''); f.append('longitude', document.getElementById('editLongitude').value || '');
+            if (inputImage && inputImage.files && inputImage.files[0]) f.append('image', inputImage.files[0]);
+            try {
+                const resp = await fetchJson(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute ? (document.querySelector('meta[name="csrf-token"]').getAttribute('content')) : '' }, body: f });
+                if (resp && resp.success) { if (editModal) editModal.hide(); location.reload(); } else { alert(resp.message || 'Erreur'); }
+            } catch (e) { console.error(e); alert('Erreur'); }
+        });
+        if (editModal) editModal.show();
+    }
+
+    // Attach event listeners via delegation for view/edit
+    document.addEventListener('click', function (e) {
+        const view = e.target.closest && e.target.closest('.btn-view');
+        if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; }
+        const edit = e.target.closest && e.target.closest('.btn-edit');
+        if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; }
+    });
+
+    // DOM ready: initialize add form intl and render client info if present
+    document.addEventListener('DOMContentLoaded', function () {
+        const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); const formAdd = document.getElementById('formAjoutClient');
+        const itiTel = initIntl(tel); const itiWa = initIntl(wa);
+        if (formAdd) {
+            formAdd.addEventListener('submit', function () {
+                try { const hTel = document.getElementById('tel_e164'); if (itiTel && hTel) hTel.value = itiTel.getNumber(); } catch (e) { console.warn(e); }
+                try { const hWa = document.getElementById('whatsapp_e164'); if (itiWa && hWa) hWa.value = itiWa.getNumber(); } catch (e) { console.warn(e); }
+            });
+        }
+        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { /* ignore */ }
+    });
+
+    // Export for other scripts
+    window.appClient = window.appClient || {};
+    window.appClient.showClient = showClient;
+    window.appClient.editClient = editClient;
+    window.appClient.renderClientInfo = renderClientInfo;
+})();
 // public/js/client.js — Single minimal client script
-(function(){
-  'use strict';
+(function () {
+    'use strict';
 
-  const initIntl = (el)=>{ if(!el||!window.intlTelInput) return null; try{ if(el.dataset.itiInitialized) return null; const iti = window.intlTelInput(el,{separateDialCode:true,initialCountry:'gn',preferredCountries:['gn','sn','ci','ml'],utilsScript:'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'}); el.dataset.itiInitialized='1'; return iti;}catch(e){console.warn(e);return null;} };
+    const initIntl = (el) => { if (!el || !window.intlTelInput) return null; try { if (el.dataset.itiInitialized) return null; const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' }); el.dataset.itiInitialized = '1'; return iti; } catch (e) { console.warn(e); return null; } };
 
-  const isLoggedIn = ()=>{ try{ if(localStorage.getItem('clientInfo')) return true;}catch(e){} return (typeof window.authUser!=='undefined' && window.authUser!==null); };
+    const isLoggedIn = () => { try { if (localStorage.getItem('clientInfo')) return true; } catch (e) { } return (typeof window.authUser !== 'undefined' && window.authUser !== null); };
 
-  const voirModalEl = document.getElementById('voirClientModal');
-  const voirModalBody = document.getElementById('voirClientContent');
-  const editModalBody = document.getElementById('editClientContent');
-  const voirModal = (voirModalEl && window.bootstrap)? new bootstrap.Modal(voirModalEl) : null;
+    const voirModalEl = document.getElementById('voirClientModal');
+    const voirModalBody = document.getElementById('voirClientContent');
+    const editModalBody = document.getElementById('editClientContent');
+    const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null;
 
-  async function showClient(id){ if(!voirModalBody) return; voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; try{ const r = await fetch(`/clients/${id}/ajax-show`); const client = await r.json(); if(client.error){ voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } voirModalBody.innerHTML = `<div><p><strong>${client.nom}</strong></p><p>${client.tel||''}</p></div>`; if(voirModal) voirModal.show(); }catch(e){ console.error(e); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; } }
+    async function showClient(id) { if (!voirModalBody) return; voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; try { const r = await fetch(`/clients/${id}/ajax-show`); const client = await r.json(); if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } voirModalBody.innerHTML = `<div><p><strong>${client.nom}</strong></p><p>${client.tel || ''}</p></div>`; if (voirModal) voirModal.show(); } catch (e) { console.error(e); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; } }
 
-  async function editClient(id){ if(!editModalBody) return; editModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; try{ const r = await fetch(`/clients/${id}/ajax-edit`); const client = await r.json(); if(client.error){ editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } editModalBody.innerHTML = `<form id="editClientForm"><input id="editNom" value="${client.nom||''}"/></form>`; }catch(e){ console.error(e); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; } }
+    async function editClient(id) { if (!editModalBody) return; editModalBody.innerHTML = '<p class="text-center">Chargement...</p>'; try { const r = await fetch(`/clients/${id}/ajax-edit`); const client = await r.json(); if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; } editModalBody.innerHTML = `<form id="editClientForm"><input id="editNom" value="${client.nom || ''}"/></form>`; } catch (e) { console.error(e); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; } }
 
-  function renderClientInfo(payload){ const container = document.getElementById('clientInfo'); if(!container) return; const obj = payload && payload.client ? payload.client : (payload||{}); try{ localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); }catch(e){} container.innerHTML = `<div class="alert alert-success"><strong>${obj.nom||'Client'}</strong> <button id="logoutBtnTop" class="btn btn-danger">Déconnexion</button></div>`; const logoutBtn = document.getElementById('logoutBtnTop'); if(logoutBtn) logoutBtn.onclick = ()=>{ try{ localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser=null;}catch(e){} window.dispatchEvent(new CustomEvent('clientInfoChanged',{detail:null})); window.dispatchEvent(new CustomEvent('authStateChanged')); try{ if(window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); }catch(e){window.location.reload();}} }
+    function renderClientInfo(payload) { const container = document.getElementById('clientInfo'); if (!container) return; const obj = payload && payload.client ? payload.client : (payload || {}); try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { } container.innerHTML = `<div class="alert alert-success"><strong>${obj.nom || 'Client'}</strong> <button id="logoutBtnTop" class="btn btn-danger">Déconnexion</button></div>`; const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = () => { try { localStorage.removeItem('clientInfo'); localStorage.removeItem('panier'); localStorage.removeItem('selectedProducts'); window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } } }
 
-  function clearClientInfo(){ const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if(!container) return; container.innerHTML=''; container.style.display='none'; if(form) form.style.display='block'; }
+    function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
 
-  window.addEventListener('clientInfoChanged', function(e){ if(!e.detail) clearClientInfo(); else renderClientInfo(e.detail); });
+    window.addEventListener('clientInfoChanged', function (e) { if (!e.detail) clearClientInfo(); else renderClientInfo(e.detail); });
 
-  document.addEventListener('click', function(e){ const view = e.target.closest('.btn-view'); if(view){ e.preventDefault(); const id = view.dataset.id; if(id) showClient(id); return; } const edit = e.target.closest('.btn-edit'); if(edit){ e.preventDefault(); const id = edit.dataset.id; if(id) editClient(id); return; } });
+    document.addEventListener('click', function (e) { const view = e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; } const edit = e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; } });
 
-  window.appClient = window.appClient||{}; window.appClient.showClient = showClient; window.appClient.editClient = editClient;
+    window.appClient = window.appClient || {}; window.appClient.showClient = showClient; window.appClient.editClient = editClient;
 
-  document.addEventListener('DOMContentLoaded', function(){ const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); initIntl(tel); initIntl(wa); try{ const stored = JSON.parse(localStorage.getItem('clientInfo')); if(stored && stored.client) renderClientInfo(stored); else if(typeof window.authUser !== 'undefined' && window.authUser!==null) renderClientInfo({client: window.authUser}); }catch(e){} });
+    document.addEventListener('DOMContentLoaded', function () { const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); initIntl(tel); initIntl(wa); try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { } });
 })();
 // public/js/client.js — Minimal, consolidated client utilities
 (function () {
-  'use strict';
+    'use strict';
 
-  const initIntl = (el) => {
-    if (!el || !window.intlTelInput) return null;
-    try {
-      if (el.dataset.itiInitialized) return null;
-      const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn','sn','ci','ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' });
-      el.dataset.itiInitialized = '1';
-      return iti;
-    } catch (err) { console.warn('initIntl error', err); return null; }
-  };
-
-  const isLoggedIn = () => { try { if (localStorage.getItem('clientInfo')) return true; } catch (e) {} return (typeof window.authUser !== 'undefined' && window.authUser !== null); };
-
-  const voirModalEl = document.getElementById('voirClientModal');
-  const voirModalBody = document.getElementById('voirClientContent');
-  const editModalEl = document.getElementById('editClientModal');
-  const editModalBody = document.getElementById('editClientContent');
-  const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null;
-  const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null;
-
-  async function showClient(id) {
-    if (!voirModalBody) return;
-    voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
-    try {
-      const r = await fetch(`/clients/${id}/ajax-show`);
-      const client = await r.json();
-      if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
-      const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
-      voirModalBody.innerHTML = `\n        <div class="row g-3"><div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div><div class="col-md-8"><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`;
-      if (voirModal) voirModal.show();
-    } catch (err) { console.error('showClient error', err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
-  }
-
-  async function editClient(id) {
-    if (!editModalBody) return;
-    editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
-    try {
-      const r = await fetch(`/clients/${id}/ajax-edit`);
-      const client = await r.json();
-      if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
-      editModalBody.innerHTML = `<form id="editClientForm"><div><label>Nom</label><input id="editNom" value="${client.nom}"/></div></form>`;
-      if (editModal) editModal.show();
-    } catch (err) { console.error('editClient error', err); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
-  }
-
-  function renderClientInfo(payload) {
-    const container = document.getElementById('clientInfo');
-    const form = document.getElementById('clientRegistrationForm');
-    if (!container) return;
-    const obj = payload && payload.client ? payload.client : (payload || {});
-    try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) {}
-    container.innerHTML = `<div class="alert alert-success"><strong>${obj.nom || obj.prenom || 'Client'}</strong><div class="text-end"><button id='logoutBtnTop' class='btn btn-danger'>Déconnexion</button></div></div>`;
-    const logoutBtn = document.getElementById('logoutBtnTop');
-    if (logoutBtn) logoutBtn.onclick = function () {
-      try { localStorage.removeItem('clientInfo'); } catch (e) {}
-      try { localStorage.removeItem('panier'); } catch (e) {}
-      try { localStorage.removeItem('selectedProducts'); } catch (e) {}
-      try { window.authUser = null; } catch (e) {}
-      window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
-      window.dispatchEvent(new CustomEvent('authStateChanged'));
-      try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+    const initIntl = (el) => {
+        if (!el || !window.intlTelInput) return null;
+        try {
+            if (el.dataset.itiInitialized) return null;
+            const iti = window.intlTelInput(el, { separateDialCode: true, initialCountry: 'gn', preferredCountries: ['gn', 'sn', 'ci', 'ml'], utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js' });
+            el.dataset.itiInitialized = '1';
+            return iti;
+        } catch (err) { console.warn('initIntl error', err); return null; }
     };
-  }
 
-  function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
+    const isLoggedIn = () => { try { if (localStorage.getItem('clientInfo')) return true; } catch (e) { } return (typeof window.authUser !== 'undefined' && window.authUser !== null); };
 
-  window.addEventListener('clientInfoChanged', function (e) { if (!e.detail) clearClientInfo(); else renderClientInfo(e.detail); });
+    const voirModalEl = document.getElementById('voirClientModal');
+    const voirModalBody = document.getElementById('voirClientContent');
+    const editModalEl = document.getElementById('editClientModal');
+    const editModalBody = document.getElementById('editClientContent');
+    const voirModal = (voirModalEl && window.bootstrap) ? new bootstrap.Modal(voirModalEl) : null;
+    const editModal = (editModalEl && window.bootstrap) ? new bootstrap.Modal(editModalEl) : null;
 
-  document.addEventListener('click', function (e) {
-    const view = e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; }
-    const edit = e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; }
-  });
+    async function showClient(id) {
+        if (!voirModalBody) return;
+        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        try {
+            const r = await fetch(`/clients/${id}/ajax-show`);
+            const client = await r.json();
+            if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+            const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+            voirModalBody.innerHTML = `\n        <div class="row g-3"><div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div><div class="col-md-8"><p><strong>Nom :</strong> ${client.nom}</p><p><strong>Téléphone :</strong> ${client.tel}</p><p><strong>WhatsApp :</strong> ${client.whatsapp || '-'}</p><p><strong>Adresse :</strong> ${client.adresse || '-'}</p>${client.latitude && client.longitude ? `<p><a href="https://www.google.com/maps?q=${client.latitude},${client.longitude}" target="_blank">Voir sur Google Maps</a></p>` : ''}<p><strong>Statut :</strong> ${statut}</p></div></div>`;
+            if (voirModal) voirModal.show();
+        } catch (err) { console.error('showClient error', err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
 
-  window.appClient = window.appClient || {};
-  window.appClient.showClient = showClient;
-  window.appClient.editClient = editClient;
+    async function editClient(id) {
+        if (!editModalBody) return;
+        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+        try {
+            const r = await fetch(`/clients/${id}/ajax-edit`);
+            const client = await r.json();
+            if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+            editModalBody.innerHTML = `<form id="editClientForm"><div><label>Nom</label><input id="editNom" value="${client.nom}"/></div></form>`;
+            if (editModal) editModal.show();
+        } catch (err) { console.error('editClient error', err); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); initIntl(tel); initIntl(wa);
-    try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) {}
-  });
+    function renderClientInfo(payload) {
+        const container = document.getElementById('clientInfo');
+        const form = document.getElementById('clientRegistrationForm');
+        if (!container) return;
+        const obj = payload && payload.client ? payload.client : (payload || {});
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
+        container.innerHTML = `<div class="alert alert-success"><strong>${obj.nom || obj.prenom || 'Client'}</strong><div class="text-end"><button id='logoutBtnTop' class='btn btn-danger'>Déconnexion</button></div></div>`;
+        const logoutBtn = document.getElementById('logoutBtnTop');
+        if (logoutBtn) logoutBtn.onclick = function () {
+            try { localStorage.removeItem('clientInfo'); } catch (e) { }
+            try { localStorage.removeItem('panier'); } catch (e) { }
+            try { localStorage.removeItem('selectedProducts'); } catch (e) { }
+            try { window.authUser = null; } catch (e) { }
+            window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
+            window.dispatchEvent(new CustomEvent('authStateChanged'));
+            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+        };
+    }
+
+    function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
+
+    window.addEventListener('clientInfoChanged', function (e) { if (!e.detail) clearClientInfo(); else renderClientInfo(e.detail); });
+
+    document.addEventListener('click', function (e) {
+        const view = e.target.closest('.btn-view'); if (view) { e.preventDefault(); const id = view.dataset.id; if (id) showClient(id); return; }
+        const edit = e.target.closest('.btn-edit'); if (edit) { e.preventDefault(); const id = edit.dataset.id; if (id) editClient(id); return; }
+    });
+
+    window.appClient = window.appClient || {};
+    window.appClient.showClient = showClient;
+    window.appClient.editClient = editClient;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); initIntl(tel); initIntl(wa);
+        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { }
+    });
 })();
 // public/js/client.js — Single, consolidated client utilities
 // Handles: client modals (view/edit), phone input intl, render client info, logout clearing localStorage, events
@@ -137,7 +688,7 @@
 
     // Determine whether a client is logged in (dynamic check)
     const isLoggedIn = () => {
-        try { if (localStorage.getItem('clientInfo')) return true; } catch (e) {}
+        try { if (localStorage.getItem('clientInfo')) return true; } catch (e) { }
         return (typeof window.authUser !== 'undefined' && window.authUser !== null);
     };
 
@@ -251,7 +802,7 @@
         const form = document.getElementById('clientRegistrationForm');
         if (!container) return;
         const obj = payload && payload.client ? payload.client : (payload || {});
-        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) {}
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
         const nom = obj.nom || obj.prenom || 'Client';
         const tel = obj.tel || obj.whatsapp || '-';
         const whatsapp = obj.whatsapp || '-';
@@ -272,7 +823,7 @@
             </div>`;
         container.style.display = 'block'; if (form) form.style.display = 'none';
         const modifyBtn = document.getElementById('modifyBtnTop'); if (modifyBtn) modifyBtn.onclick = function () { if (form) form.style.display = 'block'; container.style.display = 'none'; try { const parsed = JSON.parse(localStorage.getItem('clientInfo')); const c2 = parsed && parsed.client ? parsed.client : {}; const setIf = (sel, val) => { const input = document.querySelector(sel) || document.querySelector(sel); if (input) input.value = val || ''; }; setIf('#nom', c2.nom || c2.prenom || ''); setIf('#tel', c2.tel || c2.whatsapp || ''); setIf('#whatsapp', c2.whatsapp || c2.tel || ''); setIf('#adresse', c2.adresse || ''); } catch (e) { console.warn(e); } };
-        const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = function () { try { localStorage.removeItem('clientInfo'); } catch (e) {} try { localStorage.removeItem('authUser'); } catch (e) {} try { localStorage.removeItem('panier'); } catch (e) {} try { localStorage.removeItem('selectedProducts'); } catch (e) {} try { window.authUser = null; } catch (e) {} window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } };
+        const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = function () { try { localStorage.removeItem('clientInfo'); } catch (e) { } try { localStorage.removeItem('authUser'); } catch (e) { } try { localStorage.removeItem('panier'); } catch (e) { } try { localStorage.removeItem('selectedProducts'); } catch (e) { } try { window.authUser = null; } catch (e) { } window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null })); window.dispatchEvent(new CustomEvent('authStateChanged')); try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } };
     }
 
     function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
@@ -291,7 +842,7 @@
     // Init some basic behaviours on DOM ready
     document.addEventListener('DOMContentLoaded', function () {
         const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); initIntl(tel); initIntl(wa);
-        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) {}
+        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { }
     });
 })();
 // public/js/client.js — Single, consolidated client utilities
@@ -319,7 +870,7 @@
 
     // Determine whether a client is logged in (dynamic check)
     const isLoggedIn = () => {
-        try { if (localStorage.getItem('clientInfo')) return true; } catch (e) {}
+        try { if (localStorage.getItem('clientInfo')) return true; } catch (e) { }
         return (typeof window.authUser !== 'undefined' && window.authUser !== null);
     };
 
@@ -431,7 +982,7 @@
     function renderClientInfo(payload) {
         const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return;
         const obj = payload && payload.client ? payload.client : (payload || {});
-        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) {}
+        try { localStorage.setItem('clientInfo', JSON.stringify({ client: obj })); } catch (e) { }
         const nom = obj.nom || obj.prenom || 'Client'; const tel = obj.tel || obj.whatsapp || '-'; const whatsapp = obj.whatsapp || '-'; const adresse = obj.adresse || '-';
         container.innerHTML = `
             <div class="alert alert-success">
@@ -450,14 +1001,15 @@
         container.style.display = 'block'; if (form) form.style.display = 'none';
         const modifyBtn = document.getElementById('modifyBtnTop'); if (modifyBtn) modifyBtn.onclick = () => { if (form) form.style.display = 'block'; container.style.display = 'none'; try { const parsed = JSON.parse(localStorage.getItem('clientInfo')); const c2 = parsed && parsed.client ? parsed.client : {}; const setIf = (sel, val) => { const input = clientForm.querySelector(sel) || document.querySelector(sel); if (input) input.value = val || ''; }; setIf('#nom', c2.nom || c2.prenom || ''); setIf('#tel', c2.tel || c2.whatsapp || ''); setIf('#whatsapp', c2.whatsapp || c2.tel || ''); setIf('#adresse', c2.adresse || ''); } catch (e) { console.warn(e); } };
         const logoutBtn = document.getElementById('logoutBtnTop'); if (logoutBtn) logoutBtn.onclick = function () {
-            try { localStorage.removeItem('clientInfo'); } catch (e) {}
-            try { localStorage.removeItem('authUser'); } catch (e) {}
-            try { localStorage.removeItem('panier'); } catch (e) {}
-            try { localStorage.removeItem('selectedProducts'); } catch (e) {}
-            try { window.authUser = null; } catch (e) {}
+            try { localStorage.removeItem('clientInfo'); } catch (e) { }
+            try { localStorage.removeItem('authUser'); } catch (e) { }
+            try { localStorage.removeItem('panier'); } catch (e) { }
+            try { localStorage.removeItem('selectedProducts'); } catch (e) { }
+            try { window.authUser = null; } catch (e) { }
             window.dispatchEvent(new CustomEvent('clientInfoChanged', { detail: null }));
             window.dispatchEvent(new CustomEvent('authStateChanged'));
-            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); } };
+            try { if (window.ALL_PRODUIT_URL) window.location.href = window.ALL_PRODUIT_URL; else window.location.reload(); } catch (e) { window.location.reload(); }
+        };
     }
 
     function clearClientInfo() { const container = document.getElementById('clientInfo'); const form = document.getElementById('clientRegistrationForm'); if (!container) return; container.innerHTML = ''; container.style.display = 'none'; if (form) form.style.display = 'block'; }
@@ -476,98 +1028,98 @@
     // Init some basic behaviours on DOM ready
     document.addEventListener('DOMContentLoaded', function () {
         const tel = document.getElementById('tel'); const wa = document.getElementById('whatsapp'); initIntl(tel); initIntl(wa);
-        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) {}
+        try { const stored = JSON.parse(localStorage.getItem('clientInfo')); if (stored && stored.client) renderClientInfo(stored); else if (typeof window.authUser !== 'undefined' && window.authUser !== null) renderClientInfo({ client: window.authUser }); } catch (e) { }
     });
 })();
 // public/js/client.js — Consolidated and cleaned up
 // (Removed duplicate legacy code that was duplicating modal and client logic.)
-    if (formAdd) {
+if (formAdd) {
     // Intl init helper
-        })();
-    function initIntl(el) {
-        if (!el || !window.intlTelInput) return null;
-        if (el.dataset.itiInitialized) return null;
-        const iti = window.intlTelInput(el, {
-            separateDialCode: true,
-            initialCountry: 'gn',
-            preferredCountries: ['gn', 'sn', 'ci', 'ml'],
-            utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
-        });
-        el.dataset.itiInitialized = '1';
-        return iti;
-    }
+}) ();
+function initIntl(el) {
+    if (!el || !window.intlTelInput) return null;
+    if (el.dataset.itiInitialized) return null;
+    const iti = window.intlTelInput(el, {
+        separateDialCode: true,
+        initialCountry: 'gn',
+        preferredCountries: ['gn', 'sn', 'ci', 'ml'],
+        utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js'
+    });
+    el.dataset.itiInitialized = '1';
+    return iti;
+}
 
-    // Validation helper -- toggles bootstrap valid/invalid state and returns boolean
-    function validatePhone(el, iti, feedbackEl) {
-        if (!el) return false;
-        try {
-            if (iti) {
-                if (iti.isValidNumber()) {
+// Validation helper -- toggles bootstrap valid/invalid state and returns boolean
+function validatePhone(el, iti, feedbackEl) {
+    if (!el) return false;
+    try {
+        if (iti) {
+            if (iti.isValidNumber()) {
+                el.classList.remove('is-invalid');
+                el.classList.add('is-valid');
+                if (feedbackEl) feedbackEl.style.display = 'none';
+                return true;
+            } else {
+                el.classList.remove('is-valid');
+                if (el.value.trim().length === 0) {
                     el.classList.remove('is-invalid');
-                    el.classList.add('is-valid');
                     if (feedbackEl) feedbackEl.style.display = 'none';
-                    return true;
-                } else {
-                    el.classList.remove('is-valid');
-                    if (el.value.trim().length === 0) {
-                        el.classList.remove('is-invalid');
-                        if (feedbackEl) feedbackEl.style.display = 'none';
-                        return false;
-                    }
-                    el.classList.add('is-invalid');
-                    if (feedbackEl) feedbackEl.style.display = 'block';
                     return false;
                 }
+                el.classList.add('is-invalid');
+                if (feedbackEl) feedbackEl.style.display = 'block';
+                return false;
             }
-            const val = el.value.trim();
-            if (val.length >= 6) { el.classList.add('is-valid'); el.classList.remove('is-invalid'); if (feedbackEl) feedbackEl.style.display = 'none'; return true; }
-            el.classList.remove('is-valid'); el.classList.add('is-invalid'); if (feedbackEl) feedbackEl.style.display = 'block'; return false;
-        } catch (err) { console.warn('validatePhone error', err); return false; }
+        }
+        const val = el.value.trim();
+        if (val.length >= 6) { el.classList.add('is-valid'); el.classList.remove('is-invalid'); if (feedbackEl) feedbackEl.style.display = 'none'; return true; }
+        el.classList.remove('is-valid'); el.classList.add('is-invalid'); if (feedbackEl) feedbackEl.style.display = 'block'; return false;
+    } catch (err) { console.warn('validatePhone error', err); return false; }
+}
+
+// Setup add form phone inputs
+(function () {
+    const telInput = document.getElementById('tel');
+    const waInput = document.getElementById('whatsapp');
+    const telFeedback = document.getElementById('telFeedback');
+    const waFeedback = document.getElementById('whatsappFeedback');
+
+    const telIti = initIntl(telInput);
+    const waIti = initIntl(waInput);
+
+    function attachEvents(inputEl, iti, feedbackEl) {
+        if (!inputEl) return;
+        inputEl.addEventListener('blur', () => validatePhone(inputEl, iti, feedbackEl));
+        inputEl.addEventListener('input', () => { inputEl.classList.remove('is-valid'); inputEl.classList.remove('is-invalid'); if (feedbackEl) feedbackEl.style.display = 'none'; });
     }
 
-    // Setup add form phone inputs
-    (function () {
-        const telInput = document.getElementById('tel');
-        const waInput = document.getElementById('whatsapp');
-        const telFeedback = document.getElementById('telFeedback');
-        const waFeedback = document.getElementById('whatsappFeedback');
+    attachEvents(telInput, telIti, telFeedback);
+    attachEvents(waInput, waIti, waFeedback);
 
-        const telIti = initIntl(telInput);
-        const waIti = initIntl(waInput);
+    // On add form submit: set hidden e164 fields if intl returns a valid number
+    const formAdd = document.getElementById('formAjoutClient');
+    if (formAdd) {
+        formAdd.addEventListener('submit', function (e) {
+            if (telIti && !telIti.isValidNumber()) { validatePhone(telInput, telIti, telFeedback); e.preventDefault(); telInput.focus(); return false; }
+            if (waIti && waInput && waInput.value.trim().length > 0 && !waIti.isValidNumber()) { validatePhone(waInput, waIti, waFeedback); e.preventDefault(); waInput.focus(); return false; }
+            try { const hTel = document.getElementById('tel_e164'); if (telIti && hTel && telIti.isValidNumber()) hTel.value = telIti.getNumber(); const hWa = document.getElementById('whatsapp_e164'); if (waIti && hWa && waIti.isValidNumber()) hWa.value = waIti.getNumber(); } catch (err) { console.warn('set e164 error', err); }
+        });
+    }
+})();
 
-        function attachEvents(inputEl, iti, feedbackEl) {
-            if (!inputEl) return;
-            inputEl.addEventListener('blur', () => validatePhone(inputEl, iti, feedbackEl));
-            inputEl.addEventListener('input', () => { inputEl.classList.remove('is-valid'); inputEl.classList.remove('is-invalid'); if (feedbackEl) feedbackEl.style.display = 'none'; });
-        }
-
-        attachEvents(telInput, telIti, telFeedback);
-        attachEvents(waInput, waIti, waFeedback);
-
-        // On add form submit: set hidden e164 fields if intl returns a valid number
-        const formAdd = document.getElementById('formAjoutClient');
-        if (formAdd) {
-            formAdd.addEventListener('submit', function (e) {
-                if (telIti && !telIti.isValidNumber()) { validatePhone(telInput, telIti, telFeedback); e.preventDefault(); telInput.focus(); return false; }
-                if (waIti && waInput && waInput.value.trim().length > 0 && !waIti.isValidNumber()) { validatePhone(waInput, waIti, waFeedback); e.preventDefault(); waInput.focus(); return false; }
-                try { const hTel = document.getElementById('tel_e164'); if (telIti && hTel && telIti.isValidNumber()) hTel.value = telIti.getNumber(); const hWa = document.getElementById('whatsapp_e164'); if (waIti && hWa && waIti.isValidNumber()) hWa.value = waIti.getNumber(); } catch (err) { console.warn('set e164 error', err); }
-            });
-        }
-    })();
-
-    // Modal show (view)
-    const voirModalEl = document.getElementById('voirClientModal');
-    const voirModal = voirModalEl ? new bootstrap.Modal(voirModalEl) : null;
-    const voirModalBody = document.getElementById('voirClientContent');
-    async function showClient(id) {
-        if (!voirModalBody) return;
-        voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
-        try {
-            const res = await fetch(`/clients/${id}/ajax-show`);
-            const client = await res.json();
-            if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
-            const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
-            voirModalBody.innerHTML = `
+// Modal show (view)
+const voirModalEl = document.getElementById('voirClientModal');
+const voirModal = voirModalEl ? new bootstrap.Modal(voirModalEl) : null;
+const voirModalBody = document.getElementById('voirClientContent');
+async function showClient(id) {
+    if (!voirModalBody) return;
+    voirModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+    try {
+        const res = await fetch(`/clients/${id}/ajax-show`);
+        const client = await res.json();
+        if (client.error) { voirModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        const statut = client.statut === 'actif' ? '<span class="text-success">Actif</span>' : '<span class="text-danger">Inactif</span>';
+        voirModalBody.innerHTML = `
         <div class="row g-3">
           <div class="col-md-4 text-center"><img src="${client.image || 'https://via.placeholder.com/150'}" class="img-fluid rounded"/></div>
           <div class="col-md-8">
@@ -580,22 +1132,22 @@
             <p>${client.description || ''}</p>
           </div>
         </div>`;
-            if (voirModal) voirModal.show();
-        } catch (err) { console.error(err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
-    }
+        if (voirModal) voirModal.show();
+    } catch (err) { console.error(err); voirModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+}
 
-    // Modal edit
-    const editModalEl = document.getElementById('editClientModal');
-    const editModalObj = editModalEl ? new bootstrap.Modal(editModalEl) : null;
-    const editModalBody = document.getElementById('editClientContent');
-    async function editClient(id) {
-        if (!editModalBody) return;
-        editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
-        try {
-            const res = await fetch(`/clients/${id}/ajax-edit`);
-            const client = await res.json();
-            if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
-            editModalBody.innerHTML = `
+// Modal edit
+const editModalEl = document.getElementById('editClientModal');
+const editModalObj = editModalEl ? new bootstrap.Modal(editModalEl) : null;
+const editModalBody = document.getElementById('editClientContent');
+async function editClient(id) {
+    if (!editModalBody) return;
+    editModalBody.innerHTML = '<p class="text-center">Chargement...</p>';
+    try {
+        const res = await fetch(`/clients/${id}/ajax-edit`);
+        const client = await res.json();
+        if (client.error) { editModalBody.innerHTML = `<p class="text-danger">${client.error}</p>`; return; }
+        editModalBody.innerHTML = `
         <form id="editClientForm" enctype="multipart/form-data">
         <div class="row g-3">
           <div class="col-md-4 text-center">
@@ -627,54 +1179,54 @@
         </div>
         </form>`;
 
-            // Preview
-            const inputImage = document.getElementById('editImage');
-            const currentImage = document.getElementById('currentImage');
-            if (inputImage && currentImage) {
-                inputImage.addEventListener('change', function (e) {
-                    const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(f);
-                });
-            }
-
-            // Init intl on edit inputs
-            const elEditTel = document.getElementById('editTel');
-            const elEditWhatsapp = document.getElementById('editWhatsapp');
-            const itiEditTel = initIntl(elEditTel);
-            const itiEditWhatsapp = initIntl(elEditWhatsapp);
-
-            // Geo detect
-            const editDetectBtn = document.getElementById('editDetectPositionBtn');
-            if (editDetectBtn) {
-                editDetectBtn.addEventListener('click', function () {
-                    if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
-                    editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-                    navigator.geolocation.getCurrentPosition(async (pos) => {
-                        const lat = pos.coords.latitude; const lon = pos.coords.longitude;
-                        document.getElementById('editLatitude').value = lat; document.getElementById('editLongitude').value = lon;
-                        try { const r2 = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); const d = await r2.json(); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (err) { console.warn(err); }
-                        editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
-                    }, (err) => { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
-                });
-            }
-
-            // Save via AJAX - we prefer E.164 when available
-            document.getElementById('saveClientBtn').addEventListener('click', function () {
-                const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || '');
-                if (itiEditTel && itiEditTel.isValidNumber()) { f.append('tel', itiEditTel.getNumber()); f.append('tel_e164', itiEditTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); }
-                if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { f.append('whatsapp', itiEditWhatsapp.getNumber()); f.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
-                f.append('adresse', document.getElementById('editAdresse').value || ''); f.append('latitude', document.getElementById('editLatitude').value || ''); f.append('longitude', document.getElementById('editLongitude').value || '');
-                if (inputImage && inputImage.files && inputImage.files[0]) f.append('image', inputImage.files[0]);
-                fetch(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: f })
-                    .then(r => r.json()).then(resp => { if (resp.success) location.reload(); else alert(resp.message || 'Erreur'); }).catch(e => { console.error(e); alert('Erreur'); });
+        // Preview
+        const inputImage = document.getElementById('editImage');
+        const currentImage = document.getElementById('currentImage');
+        if (inputImage && currentImage) {
+            inputImage.addEventListener('change', function (e) {
+                const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => currentImage.src = ev.target.result; r.readAsDataURL(f);
             });
+        }
 
-            if (editModalObj) editModalObj.show();
-        } catch (err) { console.error(err); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
-    }
+        // Init intl on edit inputs
+        const elEditTel = document.getElementById('editTel');
+        const elEditWhatsapp = document.getElementById('editWhatsapp');
+        const itiEditTel = initIntl(elEditTel);
+        const itiEditWhatsapp = initIntl(elEditWhatsapp);
 
-    // Attach events
-    document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
-    document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
+        // Geo detect
+        const editDetectBtn = document.getElementById('editDetectPositionBtn');
+        if (editDetectBtn) {
+            editDetectBtn.addEventListener('click', function () {
+                if (!navigator.geolocation) { alert('Géolocalisation non supportée'); return; }
+                editDetectBtn.disabled = true; editDetectBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                    document.getElementById('editLatitude').value = lat; document.getElementById('editLongitude').value = lon;
+                    try { const r2 = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`); const d = await r2.json(); if (d && d.display_name) document.getElementById('editAdresse').value = d.display_name; } catch (err) { console.warn(err); }
+                    editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>';
+                }, (err) => { editDetectBtn.disabled = false; editDetectBtn.innerHTML = '<i class="fa fa-map-marker-alt"></i>'; alert('Impossible de détecter la position'); }, { enableHighAccuracy: true, timeout: 10000 });
+            });
+        }
+
+        // Save via AJAX - we prefer E.164 when available
+        document.getElementById('saveClientBtn').addEventListener('click', function () {
+            const f = new FormData(); f.append('_method', 'PUT'); f.append('nom', document.getElementById('editNom').value || '');
+            if (itiEditTel && itiEditTel.isValidNumber()) { f.append('tel', itiEditTel.getNumber()); f.append('tel_e164', itiEditTel.getNumber()); } else { f.append('tel', document.getElementById('editTel').value || ''); }
+            if (itiEditWhatsapp && itiEditWhatsapp.isValidNumber()) { f.append('whatsapp', itiEditWhatsapp.getNumber()); f.append('whatsapp_e164', itiEditWhatsapp.getNumber()); } else { f.append('whatsapp', document.getElementById('editWhatsapp').value || ''); }
+            f.append('adresse', document.getElementById('editAdresse').value || ''); f.append('latitude', document.getElementById('editLatitude').value || ''); f.append('longitude', document.getElementById('editLongitude').value || '');
+            if (inputImage && inputImage.files && inputImage.files[0]) f.append('image', inputImage.files[0]);
+            fetch(`/clients/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: f })
+                .then(r => r.json()).then(resp => { if (resp.success) location.reload(); else alert(resp.message || 'Erreur'); }).catch(e => { console.error(e); alert('Erreur'); });
+        });
+
+        if (editModalObj) editModalObj.show();
+    } catch (err) { console.error(err); editModalBody.innerHTML = '<p class="text-danger">Erreur</p>'; }
+}
+
+// Attach events
+document.querySelectorAll('.btn-view').forEach(btn => btn.addEventListener('click', () => showClient(btn.dataset.id)));
+document.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', () => editClient(btn.dataset.id)));
 });
 // Ensure client info is shown above the product table if a client is connected (localStorage or server)
 document.addEventListener('DOMContentLoaded', function () {
